@@ -8,7 +8,10 @@ from pathlib import Path
 from graphics.outlet_item import OutletItem
 from model.electrical import Outlet
 from graphics.factory import GraphicsFactory
+from tools.tool_manager import ToolManager
+from tools.select_tool import SelectTool
 
+from PySide6.QtCore import QPointF
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtSvgWidgets import QGraphicsSvgItem
@@ -28,7 +31,8 @@ class Canvas(QGraphicsView):
 
         self.project = project
         self.project.objects.connect(self.on_object_added)
-
+        self.tool_manager = ToolManager(self)
+        
         self.scene = QGraphicsScene()
 
         self.scene.setSceneRect(
@@ -60,6 +64,10 @@ class Canvas(QGraphicsView):
 
         self.scene.selectionChanged.connect(
             self.on_selection_changed
+        )
+
+        self.tool_manager.set_tool(
+            SelectTool(self)
         )
 
         self.setMouseTracking(True)
@@ -103,17 +111,32 @@ class Canvas(QGraphicsView):
     # Mouse
     # ==========================================================
 
+    def mousePressEvent(self, event):
+
+        if self.tool_manager.mouse_press(event):
+            return
+
+        super().mousePressEvent(event)
+
+
+    def mouseReleaseEvent(self, event):
+
+        if self.tool_manager.mouse_release(event):
+            return
+
+        super().mouseReleaseEvent(event)
+
+
     def mouseMoveEvent(self, event):
 
-        pos = self.mapToScene(
-            event.position().toPoint()
-        )
+        pos = self.mapToScene(event.position().toPoint())
 
-        window = self.window()
-
-        window.statusBar().showMessage(
+        self.window().statusBar().showMessage(
             f"X : {pos.x():.0f}    Y : {pos.y():.0f}"
         )
+
+        if self.tool_manager.mouse_move(event):
+            return
 
         super().mouseMoveEvent(event)
 
@@ -202,4 +225,47 @@ class Canvas(QGraphicsView):
 
         self.project.selection.set(
             item.object
+        )
+
+        from PySide6.QtCore import QPointF
+
+
+    # ---------------------------------------------------------
+    # Utilities
+    # ---------------------------------------------------------
+
+    # ==========================================================
+    # Utilities
+    # ==========================================================
+
+    def scene_position(self, event) -> QPointF:
+        """
+        Convert mouse event to scene coordinates.
+        """
+        return self.mapToScene(event.position().toPoint())
+
+
+    # ----------------------------------------------------------
+
+    def snap(self, point: QPointF) -> QPointF:
+        """
+        Snap a point to the current grid.
+        """
+
+        step = self.GRID_SIZE
+
+        x = round(point.x() / step) * step
+        y = round(point.y() / step) * step
+
+        return QPointF(x, y)
+
+
+    # ----------------------------------------------------------
+
+    def snap_position(self, event) -> QPointF:
+        """
+        Mouse event -> snapped scene position.
+        """
+        return self.snap(
+            self.scene_position(event)
         )

@@ -9,6 +9,10 @@ from model.project import Project
 from core.project import Project
 from model.electrical import Outlet
 from ui.property_panel import PropertyPanel
+from tools.outlet_tool import OutletTool
+from ui.library_panel import LibraryPanel
+from tools.select_tool import SelectTool
+from tools.outlet_tool import OutletTool
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
@@ -73,6 +77,10 @@ class MainWindow(QMainWindow):
                 y=120,
                 name="Prise bureau"
             )
+        )
+
+        self.canvas.tool_manager.set_tool(
+            OutletTool(self.canvas)
         )
 
     # ==============================================================
@@ -179,28 +187,16 @@ class MainWindow(QMainWindow):
 
     def _create_library(self):
 
-        dock = QDockWidget("Bibliothèque")
+        self.library = LibraryPanel()
 
-        self.library = QListWidget()
+        self.addDockWidget(
+            Qt.LeftDockWidgetArea,
+            self.library
+        )
 
-        self.library.addItems([
-            "Mur",
-            "Prise 16A",
-            "Double prise",
-            "Interrupteur",
-            "Va-et-vient",
-            "Point lumineux",
-            "Spot",
-            "RJ45",
-            "TV",
-            "Tableau"
-        ])
-
-        dock.setWidget(self.library)
-
-        dock.setMinimumWidth(220)
-
-        self.addDockWidget(Qt.LeftDockWidgetArea, dock)
+        self.library.toolSelected.connect(
+            self.on_tool_selected
+        )
 
     # ==============================================================
     # Properties
@@ -248,3 +244,25 @@ class MainWindow(QMainWindow):
             "OpenHomePlanner",
             "OpenHomePlanner\n\nVersion 0.2"
         )
+
+    def on_tool_selected(self, tool_name):
+
+        if tool_name == "select":
+
+            self.canvas.tool_manager.set_tool(
+                SelectTool(self.canvas)
+            )
+
+            self.statusBar().showMessage(
+                "Selection tool"
+            )
+
+        elif tool_name == "outlet":
+
+            self.canvas.tool_manager.set_tool(
+                OutletTool(self.canvas)
+            )
+
+            self.statusBar().showMessage(
+                "Outlet tool"
+            )

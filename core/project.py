@@ -15,3 +15,15 @@ class Project:
         self.objects = ObjectManager()
 
         self.selection = SelectionManager()
+
+    # ---------------------------------------------------------
+
+    def add_object(self, obj):
+
+        self.objects.add(obj)
+
+    # ---------------------------------------------------------
+
+    def remove_object(self, obj):
+
+        self.objects.remove(obj)
