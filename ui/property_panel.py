@@ -1,29 +1,116 @@
+"""
+Property panel for OpenHomePlanner.
+"""
+
+from __future__ import annotations
+
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDockWidget,
-    QFormLayout,
-    QWidget,
-    QLineEdit
+    QHeaderView,
+    QTableWidget,
+    QTableWidgetItem,
 )
 
 
 class PropertyPanel(QDockWidget):
+    """
+    Displays and edits the properties of the selected object.
+    """
 
     def __init__(self):
 
-        super().__init__("Propriétés")
+        super().__init__("Properties")
 
-        widget = QWidget()
+        self.table = QTableWidget()
 
-        layout = QFormLayout()
+        self.table.setColumnCount(2)
 
-        self.name = QLineEdit()
-        self.layer = QLineEdit()
-        self.rotation = QLineEdit()
+        self.table.setHorizontalHeaderLabels([
+            "Property",
+            "Value"
+        ])
 
-        layout.addRow("Nom", self.name)
-        layout.addRow("Calque", self.layer)
-        layout.addRow("Rotation", self.rotation)
+        self.table.horizontalHeader().setStretchLastSection(True)
 
-        widget.setLayout(layout)
+        self.table.horizontalHeader().setSectionResizeMode(
+            0,
+            QHeaderView.ResizeToContents
+        )
 
-        self.setWidget(widget)
+        self.table.verticalHeader().setVisible(False)
+
+        self.table.setAlternatingRowColors(True)
+
+        self.table.setSelectionBehavior(
+            QTableWidget.SelectRows
+        )
+
+        self.table.setEditTriggers(
+            QTableWidget.NoEditTriggers
+        )
+
+        self.setWidget(self.table)
+
+    # ---------------------------------------------------------
+
+    def clear_properties(self):
+
+        self.table.setRowCount(0)
+
+    # ---------------------------------------------------------
+
+    def display_object(self, obj):
+
+        self.clear_properties()
+
+        if obj is None:
+            return
+
+        properties = {
+            "Type": obj.__class__.__name__,
+            "Name": getattr(obj, "name", ""),
+            "X": getattr(obj, "x", 0),
+            "Y": getattr(obj, "y", 0),
+            "Rotation": getattr(obj, "rotation", 0),
+            "Layer": getattr(obj, "layer", ""),
+        }
+
+        #
+        # Ajoute automatiquement tous les autres attributs
+        #
+
+        for key, value in obj.__dict__.items():
+
+            if key in properties:
+                continue
+
+            properties[key] = value
+
+        self.table.setRowCount(len(properties))
+
+        row = 0
+
+        for key, value in properties.items():
+
+            item_name = QTableWidgetItem(str(key))
+
+            item_name.setFlags(
+                Qt.ItemIsEnabled
+            )
+
+            item_value = QTableWidgetItem(str(value))
+
+            self.table.setItem(
+                row,
+                0,
+                item_name
+            )
+
+            self.table.setItem(
+                row,
+                1,
+                item_value
+            )
+
+            row += 1

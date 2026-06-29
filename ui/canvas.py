@@ -5,6 +5,9 @@ Canvas principal.
 """
 
 from pathlib import Path
+from graphics.outlet_item import OutletItem
+from model.electrical import Outlet
+from graphics.factory import GraphicsFactory
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPainter, QPen
@@ -19,9 +22,12 @@ class Canvas(QGraphicsView):
 
     GRID_SIZE = 50
 
-    def __init__(self):
+    def __init__(self, project):
 
         super().__init__()
+
+        self.project = project
+        self.project.objects.connect(self.on_object_added)
 
         self.scene = QGraphicsScene()
 
@@ -50,6 +56,10 @@ class Canvas(QGraphicsView):
 
         self.setDragMode(
             QGraphicsView.ScrollHandDrag
+        )
+
+        self.scene.selectionChanged.connect(
+            self.on_selection_changed
         )
 
         self.setMouseTracking(True)
@@ -157,3 +167,39 @@ class Canvas(QGraphicsView):
             )
 
             y += self.GRID_SIZE
+    
+    def add_outlet(self, x, y):
+
+        outlet = Outlet(
+            x=x,
+            y=y,
+            name="Prise"
+        )
+
+        item = OutletItem(outlet)
+
+        self.scene.addItem(item)
+
+        return item
+    
+    def on_object_added(self, obj):
+
+        item = GraphicsFactory.create(obj)
+
+        self.scene.addItem(item)
+
+    def on_selection_changed(self):
+
+        items = self.scene.selectedItems()
+
+        if not items:
+
+            self.project.selection.clear()
+
+            return
+
+        item = items[0]
+
+        self.project.selection.set(
+            item.object
+        )

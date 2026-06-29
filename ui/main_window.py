@@ -6,6 +6,9 @@ Main application window.
 
 from pathlib import Path
 from model.project import Project
+from core.project import Project
+from model.electrical import Outlet
+from ui.property_panel import PropertyPanel
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
@@ -26,7 +29,9 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
+
         self.project = Project()
+        self.canvas = Canvas(self.project)
 
         self.setWindowTitle("OpenHomePlanner")
         self.resize(1600, 900)
@@ -40,7 +45,35 @@ class MainWindow(QMainWindow):
         self._create_library()
         self._create_properties()
 
+        self.project.selection.connect(
+            self.properties.display_object
+        )
+
         self.statusBar().showMessage("Ready")
+
+        self.project.objects.add(
+            Outlet(
+                x=0,
+                y=0,
+                name="Prise salon"
+            )
+        )
+
+        self.project.objects.add(
+            Outlet(
+                x=120,
+                y=0,
+                name="Prise TV"
+            )
+        )
+
+        self.project.objects.add(
+            Outlet(
+                x=0,
+                y=120,
+                name="Prise bureau"
+            )
+        )
 
     # ==============================================================
     # Canvas
@@ -48,7 +81,7 @@ class MainWindow(QMainWindow):
 
     def _create_canvas(self):
 
-        self.canvas = Canvas()
+        self.canvas = Canvas(self.project)
 
         self.setCentralWidget(self.canvas)
 
@@ -175,17 +208,12 @@ class MainWindow(QMainWindow):
 
     def _create_properties(self):
 
-        dock = QDockWidget("Propriétés")
+        self.properties = PropertyPanel()
 
-        self.properties = QTextEdit()
-
-        self.properties.setReadOnly(True)
-
-        dock.setWidget(self.properties)
-
-        dock.setMinimumWidth(260)
-
-        self.addDockWidget(Qt.RightDockWidgetArea, dock)
+        self.addDockWidget(
+            Qt.RightDockWidgetArea,
+            self.properties
+        )
 
     # ==============================================================
     # SVG
