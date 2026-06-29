@@ -1,33 +1,40 @@
+"""
+OpenHomePlanner
+
+Canvas principal.
+"""
+
+from pathlib import Path
+
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPainter, QColor, QPen
+from PySide6.QtGui import QColor, QPainter, QPen
+from PySide6.QtSvgWidgets import QGraphicsSvgItem
 from PySide6.QtWidgets import (
     QGraphicsScene,
-    QGraphicsView
+    QGraphicsView,
 )
 
 
 class Canvas(QGraphicsView):
 
-    GRID = 50
+    GRID_SIZE = 50
 
     def __init__(self):
 
         super().__init__()
 
-        self.scene = QGraphicsScene(-5000, -5000, 10000, 10000)
+        self.scene = QGraphicsScene()
+
+        self.scene.setSceneRect(
+            -10000,
+            -10000,
+            20000,
+            20000,
+        )
 
         self.setScene(self.scene)
 
-        self.setRenderHints(
-            QPainter.Antialiasing |
-            QPainter.TextAntialiasing
-        )
-
-        self.setViewportUpdateMode(
-            QGraphicsView.FullViewportUpdate
-        )
-
-        self.setDragMode(QGraphicsView.NoDrag)
+        self.setRenderHint(QPainter.Antialiasing)
 
         self.setTransformationAnchor(
             QGraphicsView.AnchorUnderMouse
@@ -37,65 +44,116 @@ class Canvas(QGraphicsView):
             QGraphicsView.AnchorUnderMouse
         )
 
-        self.middle_pressed = False
+        self.setViewportUpdateMode(
+            QGraphicsView.FullViewportUpdate
+        )
+
+        self.setDragMode(
+            QGraphicsView.ScrollHandDrag
+        )
+
+        self.setMouseTracking(True)
+
+        self._zoom = 1.0
+
+    # ==========================================================
+    # SVG
+    # ==========================================================
+
+    def import_svg(self, filename: Path):
+
+        item = QGraphicsSvgItem(str(filename))
+
+        item.setFlag(
+            item.GraphicsItemFlag.ItemIsSelectable,
+            True,
+        )
+
+        self.scene.addItem(item)
+
+    # ==========================================================
+    # Zoom
+    # ==========================================================
 
     def wheelEvent(self, event):
 
         if event.angleDelta().y() > 0:
-            self.scale(1.15, 1.15)
+
+            factor = 1.15
+
         else:
-            self.scale(0.87, 0.87)
 
-    def mousePressEvent(self, event):
+            factor = 1 / 1.15
 
-        if event.button() == Qt.MiddleButton:
+        self._zoom *= factor
 
-            self.middle_pressed = True
+        self.scale(factor, factor)
 
-            self.setDragMode(QGraphicsView.ScrollHandDrag)
+    # ==========================================================
+    # Mouse
+    # ==========================================================
 
-            fake = event
+    def mouseMoveEvent(self, event):
 
-            super().mousePressEvent(fake)
+        pos = self.mapToScene(
+            event.position().toPoint()
+        )
 
-            return
+        window = self.window()
 
-        super().mousePressEvent(event)
+        window.statusBar().showMessage(
+            f"X : {pos.x():.0f}    Y : {pos.y():.0f}"
+        )
 
-    def mouseReleaseEvent(self, event):
+        super().mouseMoveEvent(event)
 
-        if event.button() == Qt.MiddleButton:
-
-            self.middle_pressed = False
-
-            self.setDragMode(QGraphicsView.NoDrag)
-
-        super().mouseReleaseEvent(event)
+    # ==========================================================
+    # Background
+    # ==========================================================
 
     def drawBackground(self, painter, rect):
 
-        super().drawBackground(painter, rect)
+        painter.fillRect(
+            rect,
+            QColor(35, 35, 35)
+        )
 
-        left = int(rect.left()) - (int(rect.left()) % self.GRID)
-        top = int(rect.top()) - (int(rect.top()) % self.GRID)
+        pen = QPen(
+            QColor(55, 55, 55)
+        )
 
-        pen = QPen(QColor(60, 60, 60))
         pen.setWidth(0)
 
         painter.setPen(pen)
 
-        x = left
+        left = int(rect.left())
+        right = int(rect.right())
 
-        while x < rect.right():
+        top = int(rect.top())
+        bottom = int(rect.bottom())
 
-            painter.drawLine(x, rect.top(), x, rect.bottom())
+        x = left - (left % self.GRID_SIZE)
 
-            x += self.GRID
+        while x <= right:
 
-        y = top
+            painter.drawLine(
+                x,
+                top,
+                x,
+                bottom
+            )
 
-        while y < rect.bottom():
+            x += self.GRID_SIZE
 
-            painter.drawLine(rect.left(), y, rect.right(), y)
+        y = top - (top % self.GRID_SIZE)
 
-            y += self.GRID
+        while y <= bottom:
+
+            painter.drawLine(
+                left,
+                y,
+                right,
+                y
+            )
+
+            y += self.GRID_SIZE

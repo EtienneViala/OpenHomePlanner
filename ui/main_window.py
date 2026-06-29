@@ -1,7 +1,22 @@
+"""
+OpenHomePlanner
+
+Main application window.
+"""
+
+from pathlib import Path
+from model.project import Project
+
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
+    QFileDialog,
+    QDockWidget,
+    QListWidget,
     QMainWindow,
+    QMessageBox,
+    QTextEdit,
     QToolBar,
-    QStatusBar
 )
 
 from ui.canvas import Canvas
@@ -11,15 +26,197 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        self.project = Project()
 
         self.setWindowTitle("OpenHomePlanner")
         self.resize(1600, 900)
+
+        self.current_file = None
+
+        self._create_canvas()
+        self._create_actions()
+        self._create_menu()
+        self._create_toolbar()
+        self._create_library()
+        self._create_properties()
+
+        self.statusBar().showMessage("Ready")
+
+    # ==============================================================
+    # Canvas
+    # ==============================================================
+
+    def _create_canvas(self):
 
         self.canvas = Canvas()
 
         self.setCentralWidget(self.canvas)
 
+    # ==============================================================
+    # Actions
+    # ==============================================================
+
+    def _create_actions(self):
+
+        self.action_new = QAction("Nouveau", self)
+
+        self.action_open_svg = QAction("Importer SVG", self)
+
+        self.action_save = QAction("Sauvegarder", self)
+
+        self.action_exit = QAction("Quitter", self)
+
+        self.action_about = QAction("À propos", self)
+
+        self.action_new.setShortcut("Ctrl+N")
+
+        self.action_open_svg.setShortcut("Ctrl+O")
+
+        self.action_save.setShortcut("Ctrl+S")
+
+        self.action_exit.setShortcut("Ctrl+Q")
+
+        self.action_open_svg.triggered.connect(self.import_svg)
+
+        self.action_exit.triggered.connect(self.close)
+
+        self.action_about.triggered.connect(self.about)
+
+    # ==============================================================
+    # Menu
+    # ==============================================================
+
+    def _create_menu(self):
+
+        menu = self.menuBar()
+
+        file_menu = menu.addMenu("&Fichier")
+
+        file_menu.addAction(self.action_new)
+
+        file_menu.addSeparator()
+
+        file_menu.addAction(self.action_open_svg)
+
+        file_menu.addAction(self.action_save)
+
+        file_menu.addSeparator()
+
+        file_menu.addAction(self.action_exit)
+
+        help_menu = menu.addMenu("&Aide")
+
+        help_menu.addAction(self.action_about)
+
+    # ==============================================================
+    # Toolbar
+    # ==============================================================
+
+    def _create_toolbar(self):
+
         toolbar = QToolBar("Main")
+
+        toolbar.setMovable(False)
+
         self.addToolBar(toolbar)
 
-        self.setStatusBar(QStatusBar())
+        toolbar.addAction(self.action_new)
+
+        toolbar.addAction(self.action_open_svg)
+
+        toolbar.addAction(self.action_save)
+
+        toolbar.addSeparator()
+
+        toolbar.addAction("Sélection")
+
+        toolbar.addAction("Mur")
+
+        toolbar.addAction("Prise")
+
+        toolbar.addAction("Interrupteur")
+
+        toolbar.addAction("Lumière")
+
+        toolbar.addAction("Câble")
+
+    # ==============================================================
+    # Library
+    # ==============================================================
+
+    def _create_library(self):
+
+        dock = QDockWidget("Bibliothèque")
+
+        self.library = QListWidget()
+
+        self.library.addItems([
+            "Mur",
+            "Prise 16A",
+            "Double prise",
+            "Interrupteur",
+            "Va-et-vient",
+            "Point lumineux",
+            "Spot",
+            "RJ45",
+            "TV",
+            "Tableau"
+        ])
+
+        dock.setWidget(self.library)
+
+        dock.setMinimumWidth(220)
+
+        self.addDockWidget(Qt.LeftDockWidgetArea, dock)
+
+    # ==============================================================
+    # Properties
+    # ==============================================================
+
+    def _create_properties(self):
+
+        dock = QDockWidget("Propriétés")
+
+        self.properties = QTextEdit()
+
+        self.properties.setReadOnly(True)
+
+        dock.setWidget(self.properties)
+
+        dock.setMinimumWidth(260)
+
+        self.addDockWidget(Qt.RightDockWidgetArea, dock)
+
+    # ==============================================================
+    # SVG
+    # ==============================================================
+
+    def import_svg(self):
+
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            "Importer un SVG",
+            "",
+            "SVG (*.svg)"
+        )
+
+        if not filename:
+            return
+
+        self.current_file = Path(filename)
+
+        self.canvas.import_svg(self.current_file)
+
+        self.statusBar().showMessage(str(self.current_file))
+
+    # ==============================================================
+    # About
+    # ==============================================================
+
+    def about(self):
+
+        QMessageBox.information(
+            self,
+            "OpenHomePlanner",
+            "OpenHomePlanner\n\nVersion 0.2"
+        )
