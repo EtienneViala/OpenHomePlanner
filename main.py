@@ -1,0 +1,10 @@
+from PySide6.QtWidgets import QApplication
+from ui.main_window import MainWindow
+import sys
+
+app = QApplication(sys.argv)
+
+window = MainWindow()
+window.showMaximized()
+
+sys.exit(app.exec())
