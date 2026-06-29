@@ -10,6 +10,7 @@ from model.electrical import Outlet
 from graphics.factory import GraphicsFactory
 from tools.tool_manager import ToolManager
 from tools.select_tool import SelectTool
+from graphics.dxf_item import DXFItem
 
 from PySide6.QtCore import QPointF
 from PySide6.QtCore import Qt
@@ -268,4 +269,29 @@ class Canvas(QGraphicsView):
         """
         return self.snap(
             self.scene_position(event)
+        )
+    
+    def load_dxf(self, document):
+
+        if hasattr(self, "_dxf_item"):
+
+            self.scene.removeItem(
+                self._dxf_item
+            )
+
+        self._dxf_item = DXFItem(document)
+
+        #
+        # Le DXF reste derrière
+        #
+
+        self._dxf_item.setZValue(-1000)
+
+        self.scene.addItem(
+            self._dxf_item
+        )
+
+        self.fitInView(
+            self._dxf_item,
+            Qt.KeepAspectRatio
         )
