@@ -11,6 +11,7 @@ from model.electrical import Outlet
 from ui.property_panel import PropertyPanel
 from tools.outlet_tool import OutletTool
 from ui.library_panel import LibraryPanel
+from ui.layers_panel import LayersPanel
 from tools.select_tool import SelectTool
 from tools.outlet_tool import OutletTool
 
@@ -47,10 +48,15 @@ class MainWindow(QMainWindow):
         self._create_menu()
         self._create_toolbar()
         self._create_library()
+        self._create_layers()
         self._create_properties()
 
         self.project.selection.connect(
             self.properties.display_object
+        )
+
+        self.canvas.dxfLoaded.connect(
+            self.layers.load_document
         )
 
         self.statusBar().showMessage("Ready")
@@ -196,6 +202,23 @@ class MainWindow(QMainWindow):
 
         self.library.toolSelected.connect(
             self.on_tool_selected
+        )
+
+    # ==============================================================
+    # Layers
+    # ==============================================================
+
+    def _create_layers(self):
+
+        self.layers = LayersPanel()
+
+        self.addDockWidget(
+            Qt.LeftDockWidgetArea,
+            self.layers
+        )
+
+        self.layers.layerVisibilityChanged.connect(
+            self.canvas.set_dxf_layer_visible
         )
 
     # ==============================================================

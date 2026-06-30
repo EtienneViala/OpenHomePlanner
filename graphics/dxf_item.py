@@ -27,7 +27,9 @@ class DXFItem(QGraphicsItem):
 
         self.document = document
 
-        self.path = QPainterPath()
+        self.paths_by_layer = {}
+
+        self._bounding_rect = QRectF()
 
         self._build_path()
 
@@ -35,7 +37,11 @@ class DXFItem(QGraphicsItem):
 
     def _build_path(self):
 
+        self.paths_by_layer.clear()
+
         for entity in self.document.entities:
+
+            path = self._path_for_layer(entity.layer)
 
             #
             # LINE
@@ -43,12 +49,12 @@ class DXFItem(QGraphicsItem):
 
             if isinstance(entity, DXFLine):
 
-                self.path.moveTo(
+                path.moveTo(
                     entity.x1,
                     -entity.y1
                 )
 
-                self.path.lineTo(
+                path.lineTo(
                     entity.x2,
                     -entity.y2
                 )
@@ -64,21 +70,21 @@ class DXFItem(QGraphicsItem):
 
                 x, y = entity.points[0]
 
-                self.path.moveTo(
+                path.moveTo(
                     x,
                     -y
                 )
 
                 for x, y in entity.points[1:]:
 
-                    self.path.lineTo(
+                    path.lineTo(
                         x,
                         -y
                     )
 
                 if entity.closed:
 
-                    self.path.closeSubpath()
+                    path.closeSubpath()
 
             #
             # CIRCLE
@@ -88,18 +94,60 @@ class DXFItem(QGraphicsItem):
 
                 r = entity.radius
 
-                self.path.addEllipse(
+                path.addEllipse(
                     entity.x-r,
                     -entity.y-r,
                     r*2,
                     r*2
                 )
 
+        self._update_bounding_rect()
+
+    # ---------------------------------------------------------
+
+    def _path_for_layer(self, layer_name):
+
+        if layer_name not in self.paths_by_layer:
+
+            self.paths_by_layer[layer_name] = QPainterPath()
+
+        return self.paths_by_layer[layer_name]
+
+    # ---------------------------------------------------------
+
+    def _update_bounding_rect(self):
+
+        rect = QRectF()
+
+        for path in self.paths_by_layer.values():
+
+            if rect.isNull():
+
+                rect = path.boundingRect()
+
+            else:
+
+                rect = rect.united(path.boundingRect())
+
+        self._bounding_rect = rect
+
     # ---------------------------------------------------------
 
     def boundingRect(self):
 
-        return self.path.boundingRect()
+        return self._bounding_rect
+
+    # ---------------------------------------------------------
+
+    def refresh_layers(self):
+        """
+        Repaint after layer visibility changed.
+
+        Geometry is unchanged when a layer is shown or hidden, so we only need
+        to schedule a repaint instead of rebuilding paths or reloading the DXF.
+        """
+
+        self.update()
 
     # ---------------------------------------------------------
 
@@ -118,6 +166,12 @@ class DXFItem(QGraphicsItem):
 
         painter.setPen(pen)
 
-        painter.drawPath(
-            self.path
-        )
+        for layer_name, path in self.paths_by_layer.items():
+
+            if not self.document.is_layer_visible(layer_name):
+
+                continue
+
+            painter.drawPath(
+                path
+            )

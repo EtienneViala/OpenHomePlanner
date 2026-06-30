@@ -22,6 +22,11 @@ class DXFImporter:
 
         document = DXFDocument(filename=filename)
 
+        self._read_layers(
+            drawing,
+            document,
+        )
+
         msp = drawing.modelspace()
 
         for entity in msp:
@@ -36,9 +41,45 @@ class DXFImporter:
 
     # -------------------------------------------------------------
 
+    def _read_layers(self, drawing, document):
+        """
+        Read the DXF layer table into the document model.
+
+        Layer visibility is stored in the model instead of the graphics item so
+        the UI can change it without re-importing or coupling itself to Qt
+        rendering details.
+        """
+
+        for layer in drawing.layers:
+
+            document.ensure_layer(
+                name=layer.dxf.name,
+                color=layer.color,
+                visible=not layer.is_off(),
+            )
+
+    # -------------------------------------------------------------
+
     def _read_entity(self, drawing, document, entity):
 
         entity_type = entity.dxftype()
+
+        layer_name = getattr(
+            entity.dxf,
+            "layer",
+            "0",
+        )
+
+        color = getattr(
+            entity.dxf,
+            "color",
+            7,
+        )
+
+        document.ensure_layer(
+            layer_name,
+            color=color,
+        )
 
         #
         # LINE
@@ -56,8 +97,8 @@ class DXFImporter:
                     y1=start.y,
                     x2=end.x,
                     y2=end.y,
-                    layer=entity.dxf.layer,
-                    color=entity.dxf.color,
+                    layer=layer_name,
+                    color=color,
                 )
 
             )
@@ -78,8 +119,8 @@ class DXFImporter:
                     x=center.x,
                     y=center.y,
                     radius=entity.dxf.radius,
-                    layer=entity.dxf.layer,
-                    color=entity.dxf.color,
+                    layer=layer_name,
+                    color=color,
                 )
 
             )
@@ -94,9 +135,9 @@ class DXFImporter:
 
             poly = DXFPolyline(
 
-                layer=entity.dxf.layer,
+                layer=layer_name,
 
-                color=entity.dxf.color,
+                color=color,
 
                 closed=entity.closed,
 

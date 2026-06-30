@@ -18,6 +18,24 @@ class DXFEntity:
 
 
 # ==========================================================
+# Layer
+# ==========================================================
+
+@dataclass
+class DXFLayer:
+    """
+    DXF layer stored in the document model.
+
+    This class intentionally contains no Qt dependency. The UI can toggle
+    ``visible`` and the graphics layer can repaint from that model state.
+    """
+
+    name: str
+    visible: bool = True
+    color: int = 7
+
+
+# ==========================================================
 # Line
 # ==========================================================
 
@@ -66,3 +84,60 @@ class DXFDocument:
     filename: str = ""
 
     entities: list = field(default_factory=list)
+
+    layers: dict[str, DXFLayer] = field(default_factory=dict)
+
+    def ensure_layer(
+        self,
+        name: str,
+        color: int = 7,
+        visible: bool = True,
+    ) -> DXFLayer:
+        """
+        Return an existing layer or create it.
+
+        Entities may reference layers that are absent from the DXF layer table,
+        especially in imperfect exported files. Keeping this method in the
+        model lets the importer stay simple and keeps layer consistency in one
+        place.
+        """
+
+        if not name:
+            name = "0"
+
+        if name not in self.layers:
+            self.layers[name] = DXFLayer(
+                name=name,
+                visible=visible,
+                color=color,
+            )
+
+        return self.layers[name]
+
+    def set_layer_visible(
+        self,
+        name: str,
+        visible: bool,
+    ) -> None:
+        """
+        Change the visibility of a layer.
+        """
+
+        layer = self.ensure_layer(name)
+
+        layer.visible = visible
+
+    def is_layer_visible(
+        self,
+        name: str,
+    ) -> bool:
+        """
+        Return True when a layer should be painted.
+        """
+
+        layer = self.layers.get(name)
+
+        if layer is None:
+            return True
+
+        return layer.visible

@@ -14,6 +14,7 @@ from graphics.dxf_item import DXFItem
 
 from PySide6.QtCore import QPointF
 from PySide6.QtCore import Qt
+from PySide6.QtCore import Signal
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtSvgWidgets import QGraphicsSvgItem
 from PySide6.QtWidgets import (
@@ -23,6 +24,8 @@ from PySide6.QtWidgets import (
 
 
 class Canvas(QGraphicsView):
+
+    dxfLoaded = Signal(object)
 
     GRID_SIZE = 50
 
@@ -279,6 +282,8 @@ class Canvas(QGraphicsView):
                 self._dxf_item
             )
 
+        self.dxf_document = document
+
         self._dxf_item = DXFItem(document)
 
         #
@@ -295,3 +300,29 @@ class Canvas(QGraphicsView):
             self._dxf_item,
             Qt.KeepAspectRatio
         )
+
+        self.dxfLoaded.emit(document)
+
+    # ----------------------------------------------------------
+
+    def set_dxf_layer_visible(
+        self,
+        layer_name: str,
+        visible: bool,
+    ) -> None:
+        """
+        Show or hide a DXF layer without reloading the file.
+        """
+
+        if not hasattr(self, "dxf_document"):
+
+            return
+
+        self.dxf_document.set_layer_visible(
+            layer_name,
+            visible,
+        )
+
+        if hasattr(self, "_dxf_item"):
+
+            self._dxf_item.refresh_layers()
