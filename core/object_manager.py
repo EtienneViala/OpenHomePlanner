@@ -11,7 +11,9 @@ class ObjectManager:
 
         self._objects = []
 
-        self._callbacks = []
+        self._added_callbacks = []
+
+        self._removed_callbacks = []
 
     @property
     def objects(self):
@@ -22,12 +24,18 @@ class ObjectManager:
 
         self._objects.append(obj)
 
-        for callback in self._callbacks:
+        for callback in self._added_callbacks:
             callback(obj)
 
     def remove(self, obj: BaseObject):
 
+        if obj not in self._objects:
+            return
+
         self._objects.remove(obj)
+
+        for callback in self._removed_callbacks:
+            callback(obj)
 
     def clear(self):
 
@@ -35,7 +43,11 @@ class ObjectManager:
 
     def connect(self, callback):
 
-        self._callbacks.append(callback)
+        self._added_callbacks.append(callback)
+
+    def connect_removed(self, callback):
+
+        self._removed_callbacks.append(callback)
 
     def __iter__(self):
 

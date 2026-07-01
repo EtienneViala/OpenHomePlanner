@@ -1,6 +1,6 @@
 # OpenHomePlanner - Architecture
 
-Version : V0.6
+Version : V0.6.1
 
 ---
 
@@ -127,6 +127,8 @@ tools/
 ui/
     main_window.py
     canvas.py
+    toolbar.py
+    statusbar.py
     library_panel.py
     property_panel.py
 
@@ -227,8 +229,13 @@ Il :
 - zoom
 - déplace
 - transmet les événements
+- fournit le snap courant aux outils
+- ajuste la vue au contenu
 
 Il ne crée jamais d'objets métier.
+
+Il ne supprime jamais directement un objet métier : il transmet l'action au
+`ToolManager`, puis le `Project` notifie la vue via `ObjectManager`.
 
 ---
 
@@ -424,6 +431,38 @@ GraphicsFactory
 
 GraphicsItem
 ```
+
+---
+
+# Suppression des objets
+
+```
+Utilisateur
+
+↓
+
+Canvas
+
+↓
+
+ToolManager / Action
+
+↓
+
+Project.remove_object(...)
+
+↓
+
+ObjectManager
+
+↓
+
+Canvas
+```
+
+La suppression retire l'objet du projet, notifie la vue, vide la selection et
+met a jour le panneau de proprietes. Ce flux reste compatible avec un futur
+systeme Undo/Redo.
 
 ---
 

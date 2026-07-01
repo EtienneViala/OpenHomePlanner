@@ -14,17 +14,22 @@ from graphics.dxf_item import DXFItem
 from PySide6.QtCore import QPointF
 from PySide6.QtCore import Qt
 from PySide6.QtCore import Signal
-from PySide6.QtGui import QColor, QPainter, QPen
+from PySide6.QtGui import QColor, QKeySequence, QPainter, QPen
 from PySide6.QtSvgWidgets import QGraphicsSvgItem
 from PySide6.QtWidgets import (
     QGraphicsScene,
     QGraphicsView,
+    QMenu,
 )
 
 
 class Canvas(QGraphicsView):
 
     dxfLoaded = Signal(object)
+    mousePositionChanged = Signal(float, float)
+    snapChanged = Signal(bool)
+    gridVisibilityChanged = Signal(bool)
+    zoomChanged = Signal(float)
 
     GRID_SIZE = 50
 
@@ -34,7 +39,11 @@ class Canvas(QGraphicsView):
 
         self.project = project
         self.project.objects.connect(self.on_object_added)
+        self.project.objects.connect_removed(self.on_object_removed)
         self.tool_manager = ToolManager(self)
+        self._items_by_object = {}
+        self._snap_enabled = True
+        self._grid_visible = True
         
         self.scene = QGraphicsScene()
 
@@ -64,6 +73,8 @@ class Canvas(QGraphicsView):
         self.setDragMode(
             QGraphicsView.ScrollHandDrag
         )
+
+        self.setFocusPolicy(Qt.StrongFocus)
 
         self.scene.selectionChanged.connect(
             self.on_selection_changed
@@ -109,6 +120,24 @@ class Canvas(QGraphicsView):
         self._zoom *= factor
 
         self.scale(factor, factor)
+        self.zoomChanged.emit(self._zoom)
+
+    def zoom_in(self):
+        """
+        Zoom in from toolbar or shortcut action.
+        """
+        self._apply_zoom_factor(1.15)
+
+    def zoom_out(self):
+        """
+        Zoom out from toolbar or shortcut action.
+        """
+        self._apply_zoom_factor(1 / 1.15)
+
+    def _apply_zoom_factor(self, factor: float):
+        self._zoom *= factor
+        self.scale(factor, factor)
+        self.zoomChanged.emit(self._zoom)
 
     # ==========================================================
     # Mouse
@@ -134,14 +163,71 @@ class Canvas(QGraphicsView):
 
         pos = self.mapToScene(event.position().toPoint())
 
-        self.window().statusBar().showMessage(
-            f"X : {pos.x():.0f}    Y : {pos.y():.0f}"
-        )
+        self.mousePositionChanged.emit(pos.x(), pos.y())
 
         if self.tool_manager.mouse_move(event):
             return
 
         super().mouseMoveEvent(event)
+
+    def contextMenuEvent(self, event):
+        """
+        Show object actions without mutating the scene directly.
+        """
+        item = self.itemAt(event.pos())
+        obj = getattr(item, "object", None) if item is not None else None
+
+        if obj is None:
+            super().contextMenuEvent(event)
+            return
+
+        if not item.isSelected():
+            self.scene.clearSelection()
+            item.setSelected(True)
+
+        menu = QMenu(self)
+        delete_action = menu.addAction("Supprimer")
+        properties_action = menu.addAction("Propriétés")
+
+        chosen_action = menu.exec(event.globalPos())
+
+        if chosen_action == delete_action:
+            self.delete_selection()
+        elif chosen_action == properties_action:
+            self.project.selection.set(obj)
+
+    def keyPressEvent(self, event):
+        """
+        Canvas keyboard shortcuts.
+        """
+        if event.key() == Qt.Key_Escape:
+            self.tool_manager.set_tool(SelectTool(self))
+            event.accept()
+            return
+
+        if event.key() == Qt.Key_Delete:
+            self.delete_selection()
+            event.accept()
+            return
+
+        if event.matches(QKeySequence.SelectAll):
+            self.select_all_objects()
+            event.accept()
+            return
+
+        if (
+            event.key() == Qt.Key_0
+            and event.modifiers() & Qt.ControlModifier
+        ):
+            self.fit_to_content()
+            event.accept()
+            return
+
+        if self.tool_manager.key_press(event):
+            event.accept()
+            return
+
+        super().keyPressEvent(event)
 
     # ==========================================================
     # Background
@@ -153,6 +239,9 @@ class Canvas(QGraphicsView):
             rect,
             QColor(35, 35, 35)
         )
+
+        if not self._grid_visible:
+            return
 
         pen = QPen(
             QColor(55, 55, 55)
@@ -198,7 +287,16 @@ class Canvas(QGraphicsView):
 
         item = GraphicsFactory.create(obj)
 
+        self._items_by_object[obj.uid] = item
+
         self.scene.addItem(item)
+
+    def on_object_removed(self, obj):
+
+        item = self._items_by_object.pop(obj.uid, None)
+
+        if item is not None:
+            self.scene.removeItem(item)
 
     def on_selection_changed(self):
 
@@ -239,8 +337,10 @@ class Canvas(QGraphicsView):
 
     def snap(self, point: QPointF) -> QPointF:
         """
-        Snap a point to the current grid.
+        Return the point snapped to the grid when snap is enabled.
         """
+        if not self._snap_enabled:
+            return point
 
         step = self.GRID_SIZE
 
@@ -259,6 +359,76 @@ class Canvas(QGraphicsView):
         return self.snap(
             self.scene_position(event)
         )
+
+    @property
+    def snap_enabled(self) -> bool:
+        return self._snap_enabled
+
+    def set_snap_enabled(self, enabled: bool):
+        self._snap_enabled = enabled
+        self.snapChanged.emit(enabled)
+
+    def toggle_snap(self):
+        self.set_snap_enabled(not self._snap_enabled)
+
+    @property
+    def grid_visible(self) -> bool:
+        return self._grid_visible
+
+    def set_grid_visible(self, visible: bool):
+        self._grid_visible = visible
+        self.gridVisibilityChanged.emit(visible)
+        self.viewport().update()
+
+    def toggle_grid(self):
+        self.set_grid_visible(not self._grid_visible)
+
+    def selected_project_objects(self):
+        objects = []
+
+        for item in self.scene.selectedItems():
+            obj = getattr(item, "object", None)
+            if obj is not None:
+                objects.append(obj)
+
+        return objects
+
+    def delete_selection(self):
+        """
+        Delete selected project objects through the project API.
+        """
+        objects = self.selected_project_objects()
+
+        if not objects:
+            return
+
+        self.tool_manager.delete_objects(objects)
+
+        self.scene.clearSelection()
+        self.project.selection.clear()
+
+    def select_all_objects(self):
+        """
+        Select every graphics item linked to a project object.
+        """
+        for item in self._items_by_object.values():
+            item.setSelected(True)
+
+    def fit_to_content(self):
+        """
+        Fit the view to the visible content of the scene.
+        """
+        rect = self.scene.itemsBoundingRect()
+
+        if rect.isNull() or rect.isEmpty():
+            return
+
+        margin = 100
+        rect = rect.adjusted(-margin, -margin, margin, margin)
+
+        self.fitInView(rect, Qt.KeepAspectRatio)
+        self._zoom = self.transform().m11()
+        self.zoomChanged.emit(self._zoom)
     
     def load_dxf(self, document):
 
@@ -282,11 +452,7 @@ class Canvas(QGraphicsView):
             self._dxf_item
         )
 
-        if not self._dxf_item.boundingRect().isNull():
-            self.fitInView(
-                self._dxf_item,
-                Qt.KeepAspectRatio,
-            )
+        self.fit_to_content()
 
         self.dxfLoaded.emit(document)
 

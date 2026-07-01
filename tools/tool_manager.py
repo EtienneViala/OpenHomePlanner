@@ -4,15 +4,21 @@ Tool manager for OpenHomePlanner.
 
 from __future__ import annotations
 
+from PySide6.QtCore import QObject, Signal
+
 from tools.tool import Tool
 
 
-class ToolManager:
+class ToolManager(QObject):
     """
     Holds the current active tool and forwards events to it.
     """
 
+    toolChanged = Signal(str, str)
+
     def __init__(self, canvas):
+
+        super().__init__()
 
         self.canvas = canvas
 
@@ -29,6 +35,10 @@ class ToolManager:
 
         if self.current_tool is not None:
             self.current_tool.activate()
+
+            tool_id = getattr(self.current_tool, "TOOL_ID", "")
+            tool_name = getattr(self.current_tool, "NAME", "Tool")
+            self.toolChanged.emit(tool_id, tool_name)
 
     # ---------------------------------------------------------
 
@@ -83,3 +93,12 @@ class ToolManager:
             return False
 
         return self.current_tool.key_release(event)
+
+    # ---------------------------------------------------------
+
+    def delete_objects(self, objects):
+        """
+        Delete project objects through the project entry point.
+        """
+        for obj in objects:
+            self.canvas.project.remove_object(obj)

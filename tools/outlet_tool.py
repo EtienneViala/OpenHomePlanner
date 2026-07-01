@@ -10,6 +10,8 @@ from model.electrical import Outlet
 
 class OutletTool(Tool):
 
+    TOOL_ID = "outlet"
+
     NAME = "Outlet"
 
     def mouse_press(self, event):

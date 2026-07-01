@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 class SelectTool(Tool):
 
+    TOOL_ID = "select"
+
     NAME = "Selection"
 
     def activate(self):

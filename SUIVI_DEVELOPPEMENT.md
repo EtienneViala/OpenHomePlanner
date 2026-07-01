@@ -6,9 +6,9 @@ Derniere mise a jour : 2026-07-01
 
 # Etat global
 
-Version de travail : V0.6 finalisee
+Version de travail : V0.6.1 finalisee
 
-OpenHomePlanner est actuellement capable d'importer un plan DXF, de l'afficher comme fond de plan, de placer des objets electriques simples et de gerer leur selection.
+OpenHomePlanner est actuellement capable d'importer un plan DXF, de l'afficher comme fond de plan, de placer des objets electriques simples, de gerer leur selection et de proposer une experience utilisateur stabilisee.
 
 Le travail recent porte sur la structuration du DXF et la gestion des calques, afin de preparer les fonctions de filtrage, de reconnaissance et d'annotation.
 
@@ -73,16 +73,36 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Etat de verrouillage des calques conserve dans le modele
 - Gestion propre des DXF invalides, vides, blocs manquants et entites non supportees
 
+## V0.6.1 - Amelioration de l'experience utilisateur
+
+- Ajout d'une vraie toolbar synchronisee avec le `ToolManager`
+- Activation des outils Selection et Prise depuis la toolbar
+- Synchronisation de la toolbar lors du changement d'outil depuis la bibliotheque
+- Ajout d'une barre d'etat permanente
+- Affichage de l'outil actif, des coordonnees souris, du snap et du zoom
+- Snap activable/desactivable depuis la toolbar
+- Placement libre quand le snap est desactive
+- Affichage/masquage de la grille
+- Methode generique `Canvas.fit_to_content()`
+- Ajustement de la vue apres import DXF et via `Ctrl+0`
+- Suppression propre des objets via `Project.remove_object(...)`
+- Suppression par touche `Suppr`
+- Menu contextuel avec `Supprimer` et `Proprietes`
+- Retour a l'outil Selection avec `ESC`
+- Selection de tous les objets avec `Ctrl+A`
+
 ---
 
 # En cours
 
-## Stabilisation V0.6 terminee
+## Stabilisation V0.6.1 terminee
 
 - Import reel teste avec `rochette.dxf` : 191 entites importees
 - Calques detectes sur le fichier de test : `0`, `Defpoints`, `Layer 1`
 - Panneau `Layers` synchronise automatiquement apres import
 - Masquage/affichage des calques sans rechargement du DXF
+- Toolbar, barre d'etat, snap, grille et raccourcis clavier connectes
+- Suppression d'objets validee via le flux Project/ObjectManager/Canvas
 
 ---
 
@@ -177,3 +197,15 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Remplacement des `print()` par du logging
 - Ajout d'un `.gitignore`
 - Suppression des caches Python suivis ou generes localement
+
+## 2026-07-01 - V0.6.1
+
+- Ajout de `ui/toolbar.py` pour centraliser les actions utilisateur rapides
+- Extension de `ui/statusbar.py` pour afficher l'etat permanent de l'application
+- Ajout de signaux `ToolManager.toolChanged` pour synchroniser UI et outils
+- Ajout des notifications de suppression dans `ObjectManager`
+- Ajout de `Canvas.fit_to_content()`
+- Ajout du snap activable et de l'affichage/masquage de la grille
+- Ajout des raccourcis `ESC`, `Ctrl+0`, `Suppr` et `Ctrl+A`
+- Ajout du menu contextuel objet avec suppression
+- Validation par compilation Python et test d'import DXF sur `rochette.dxf`
