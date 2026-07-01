@@ -6,9 +6,9 @@ Derniere mise a jour : 2026-07-01
 
 # Etat global
 
-Version de travail : V0.6.1 finalisee
+Version de travail : V0.6.2 finalisee
 
-OpenHomePlanner est actuellement capable d'importer un plan DXF, de l'afficher comme fond de plan, de placer des objets electriques simples, de gerer leur selection et de proposer une experience utilisateur stabilisee.
+OpenHomePlanner est actuellement capable d'importer un plan DXF, de l'afficher comme fond de plan, de placer des objets electriques simples, de gerer leur selection, de proposer une experience utilisateur stabilisee et d'afficher une preview temporaire pour les outils de placement.
 
 Le travail recent porte sur la structuration du DXF et la gestion des calques, afin de preparer les fonctions de filtrage, de reconnaissance et d'annotation.
 
@@ -91,11 +91,23 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Retour a l'outil Selection avec `ESC`
 - Selection de tous les objets avec `Ctrl+A`
 
+## V0.6.2 - Ghost preview generique
+
+- Ajout de `PreviewDefinition`, donnee pure sans dependance Qt
+- Ajout de `PreviewItem` pour afficher un apercu temporaire non selectionnable
+- Ajout de `PreviewFactory` pour creer les items temporaires de preview
+- Ajout de `PreviewManager` pour gerer creation, mise a jour et destruction
+- Integration du cycle de preview dans `ToolManager`
+- Ajout de primitives de vue dans `Canvas` pour afficher, deplacer et supprimer la preview
+- Ajout d'une preview semi-transparente pour `OutletTool`
+- Suppression automatique de la preview lors du changement d'outil
+- Aucun objet metier cree avant le clic utilisateur
+
 ---
 
 # En cours
 
-## Stabilisation V0.6.1 terminee
+## Stabilisation V0.6.2 terminee
 
 - Import reel teste avec `rochette.dxf` : 191 entites importees
 - Calques detectes sur le fichier de test : `0`, `Defpoints`, `Layer 1`
@@ -103,6 +115,8 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Masquage/affichage des calques sans rechargement du DXF
 - Toolbar, barre d'etat, snap, grille et raccourcis clavier connectes
 - Suppression d'objets validee via le flux Project/ObjectManager/Canvas
+- Ghost preview validee par compilation Python
+- Check automatique disponible : `py scripts/check_v062.py rochette.dxf`
 
 ---
 
@@ -114,6 +128,7 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - `GraphicsFactory` doit rester le point de creation des objets graphiques du projet
 - Le DXF doit rester un fond de plan verrouille
 - Les objets du projet doivent rester au-dessus du DXF
+- Les previews doivent rester temporaires, hors `Project` et hors selection
 
 ---
 
@@ -209,3 +224,18 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Ajout des raccourcis `ESC`, `Ctrl+0`, `Suppr` et `Ctrl+A`
 - Ajout du menu contextuel objet avec suppression
 - Validation par compilation Python et test d'import DXF sur `rochette.dxf`
+
+## 2026-07-01 - V0.6.2
+
+- Ajout de `core/preview.py`
+- Ajout de `graphics/preview_item.py`
+- Ajout de `graphics/preview_factory.py`
+- Ajout de `graphics/preview_manager.py`
+- Ajout de `Tool.preview_definition()`
+- Integration de `PreviewManager` dans `ToolManager`
+- Ajout de `Canvas.show_preview_item(...)`
+- Ajout de `Canvas.move_preview_item(...)`
+- Ajout de `Canvas.remove_preview_item()`
+- Ajout de la preview generique de placement pour `OutletTool`
+- Mise a jour de la documentation d'architecture
+- Ajout de `scripts/check_v062.py` pour valider automatiquement la V0.6.2

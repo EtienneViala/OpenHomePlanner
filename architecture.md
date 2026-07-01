@@ -1,6 +1,6 @@
 # OpenHomePlanner - Architecture
 
-Version : V0.6.1
+Version : V0.6.2
 
 ---
 
@@ -107,6 +107,9 @@ graphics/
     outlet_item.py
     dxf_item.py
     factory.py
+    preview_item.py
+    preview_factory.py
+    preview_manager.py
 
 importer/
     dxf_importer.py
@@ -260,6 +263,58 @@ WallItem
 ```
 
 Le Canvas ne connaît jamais les objets.
+
+---
+
+# Ghost Preview
+
+La V0.6.2 ajoute une infrastructure generique de previsualisation pour les
+outils de placement.
+
+```
+Tool
+
+|
+v
+
+PreviewDefinition
+
+|
+v
+
+ToolManager
+
+|
+v
+
+PreviewManager
+
+|
+v
+
+PreviewFactory
+
+|
+v
+
+PreviewItem
+
+|
+v
+
+Canvas
+```
+
+Regles :
+
+- le `PreviewDefinition` est une donnee pure sans dependance Qt
+- les outils declarent seulement le type d'apercu souhaite
+- le `ToolManager` gere la creation, la mise a jour et la destruction
+- le `PreviewFactory` cree les items temporaires de preview
+- le `Canvas` affiche, deplace et supprime uniquement l'item temporaire recu
+- aucun objet metier n'est cree avant le clic utilisateur
+- aucun item de preview n'est conserve dans le `Project`
+- la preview est non selectionnable et semi-transparente
 
 ---
 

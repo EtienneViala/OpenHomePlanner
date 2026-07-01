@@ -4,6 +4,7 @@ Outlet placement tool.
 
 from PySide6.QtCore import Qt
 
+from core.preview import PreviewDefinition
 from tools.tool import Tool
 from model.electrical import Outlet
 
@@ -13,6 +14,12 @@ class OutletTool(Tool):
     TOOL_ID = "outlet"
 
     NAME = "Outlet"
+
+    def preview_definition(self) -> PreviewDefinition:
+        """
+        Describe the temporary symbol displayed before placement.
+        """
+        return PreviewDefinition(shape="circle_cross", size=24.0)
 
     def mouse_press(self, event):
 

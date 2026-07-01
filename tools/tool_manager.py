@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject, Signal
 
+from graphics.preview_manager import PreviewManager
 from tools.tool import Tool
 
 
@@ -23,6 +24,7 @@ class ToolManager(QObject):
         self.canvas = canvas
 
         self.current_tool: Tool | None = None
+        self.preview = PreviewManager(canvas)
 
     # ---------------------------------------------------------
 
@@ -31,10 +33,14 @@ class ToolManager(QObject):
         if self.current_tool is not None:
             self.current_tool.deactivate()
 
+        self.preview.clear()
         self.current_tool = tool
 
         if self.current_tool is not None:
             self.current_tool.activate()
+            self.preview.set_preview(
+                self.current_tool.preview_definition()
+            )
 
             tool_id = getattr(self.current_tool, "TOOL_ID", "")
             tool_name = getattr(self.current_tool, "NAME", "Tool")
@@ -47,7 +53,12 @@ class ToolManager(QObject):
         if self.current_tool is None:
             return False
 
-        return self.current_tool.mouse_press(event)
+        handled = self.current_tool.mouse_press(event)
+
+        if handled:
+            self.preview.hide_item()
+
+        return handled
 
     # ---------------------------------------------------------
 
@@ -64,6 +75,10 @@ class ToolManager(QObject):
 
         if self.current_tool is None:
             return False
+
+        self.preview.move_to(
+            self.canvas.snap_position(event)
+        )
 
         return self.current_tool.mouse_move(event)
 

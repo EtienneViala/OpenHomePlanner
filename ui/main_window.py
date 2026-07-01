@@ -198,7 +198,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(
             self,
             "OpenHomePlanner",
-            "OpenHomePlanner\n\nVersion 0.6.1",
+            "OpenHomePlanner\n\nVersion 0.6.2",
         )
 
     def activate_tool(self, tool_name: str):

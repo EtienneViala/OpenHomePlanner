@@ -4,6 +4,8 @@ Base tool class for OpenHomePlanner.
 
 from __future__ import annotations
 
+from core.preview import PreviewDefinition
+
 
 class Tool:
     """
@@ -36,6 +38,17 @@ class Tool:
         Called when another tool replaces this one.
         """
         pass
+
+    # ---------------------------------------------------------
+
+    def preview_definition(self) -> PreviewDefinition | None:
+        """
+        Return the temporary preview needed by this tool.
+
+        Tools only describe the preview. They never create or manipulate
+        graphics items directly.
+        """
+        return None
 
     # ---------------------------------------------------------
 
