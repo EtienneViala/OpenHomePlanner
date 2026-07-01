@@ -6,9 +6,9 @@ Derniere mise a jour : 2026-07-01
 
 # Etat global
 
-Version de travail : V0.7.2 finalisee
+Version de travail : V0.7.3 finalisee
 
-OpenHomePlanner est actuellement capable d'importer un plan DXF, de l'afficher comme fond de plan, de placer des objets electriques simples, de dessiner manuellement des murs, de gerer leur selection, de proposer une experience utilisateur stabilisee, d'afficher une preview temporaire pour les outils de placement, de stocker un modele architectural pur Python dans le Project et de produire un premier rapport d'analyse DXF du batiment.
+OpenHomePlanner est actuellement capable d'importer un plan DXF, de l'afficher comme fond de plan, de placer des objets electriques simples, de dessiner manuellement des murs, de detecter automatiquement une premiere serie de murs probables depuis un DXF calibre, de gerer leur selection, de proposer une experience utilisateur stabilisee, d'afficher une preview temporaire pour les outils de placement, de stocker un modele architectural pur Python dans le Project et de produire un rapport d'analyse DXF du batiment.
 
 Le travail recent porte sur la structuration du DXF et la gestion des calques, afin de preparer les fonctions de filtrage, de reconnaissance et d'annotation.
 
@@ -147,11 +147,29 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Ajout de `scripts/check_v072.py`
 - Aucune reconnaissance automatique de murs, ouvertures ou pieces
 
+## V0.7.3 - Premiere detection automatique des murs
+
+- Implementation de `analysis/detectors/wall_detector.py`
+- Extraction de segments depuis `DXFLine` et `DXFPolyline`
+- Rejet des segments trop courts
+- Fusion simple de segments colineaires ou proches
+- Detection de paires de lignes paralleles proches pouvant former un mur
+- Creation de `model.architecture.Wall` en coordonnees projet, donc en cm
+- Extension de `AnalysisReport` avec le nombre de murs, les segments analyses,
+  les segments ignores, les murs detectes et une confiance globale
+- Ajout de l'action `Analyse > Detecter les murs`
+- Ajout des murs detectes via `Project.add_object(...)`, donc affichage par
+  `GraphicsFactory` / `WallItem` et suppression via le flux existant
+- Ajout de `tests/test_wall_detector.py`
+- Ajout de `scripts/check_v073.py`
+- Pas de detection de portes, fenetres, pieces, circuits electriques ou
+  plomberie
+
 ---
 
 # En cours
 
-## Stabilisation V0.7.2 terminee
+## Stabilisation V0.7.3 terminee
 
 - Import reel teste avec `rochette.dxf` : 191 entites importees
 - Calques detectes sur le fichier de test : `0`, `Defpoints`, `Layer 1`
@@ -168,6 +186,9 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Check automatique V0.7.2 disponible : `py scripts/check_v072.py rochette.dxf`
 - Detection de la cote vectorisee `410` dans `rochette.dxf`
 - Application du facteur d'echelle d'analyse au rendu `DXFItem`
+- Premiere detection automatique de murs disponible via
+  `Analyse > Detecter les murs`
+- Check automatique V0.7.3 disponible : `py scripts/check_v073.py rochette.dxf`
 
 ---
 
@@ -319,3 +340,16 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Ajout de `tests/test_analysis.py`
 - Ajout de `scripts/check_v072.py`
 - Mise a jour du README et de l'architecture
+
+## 2026-07-01 - V0.7.3
+
+- Remplacement du squelette `WallDetector` par une premiere detection
+  exploitable des murs
+- Ajout de metriques murs au `AnalysisReport`
+- Ajout de l'action utilisateur `Analyse > Detecter les murs`
+- Ajout de tests unitaires pour l'extraction, le filtrage, l'echelle, la
+  creation de `Wall` et l'integration `BuildingAnalyzer`
+- Ajout de `scripts/check_v073.py` avec non-regressions V0.7.2, V0.7.1 et
+  V0.6.2
+- Documentation des limites : pas de portes, fenetres, pieces, circuits ou
+  plomberie

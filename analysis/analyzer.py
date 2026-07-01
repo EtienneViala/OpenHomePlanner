@@ -13,8 +13,9 @@ from analysis.detectors.dimension_detector import DimensionDetector
 from analysis.detectors.opening_detector import OpeningDetector
 from analysis.detectors.room_detector import RoomDetector
 from analysis.detectors.unit_detector import UnitDetection, UnitDetector
-from analysis.detectors.wall_detector import WallDetector
+from analysis.detectors.wall_detector import WallDetectionResult, WallDetector
 from importer.dxf_importer import DXFImporter
+from model.architecture import Wall
 
 
 @dataclass(frozen=True)
@@ -27,6 +28,10 @@ class AnalysisReport:
     dimension_count: int = 0
     scale_factor: float | None = None
     real_unit: str = "cm"
+    wall_count: int = 0
+    segments_analyzed: int = 0
+    segments_ignored: int = 0
+    detected_walls: list[Wall] = field(default_factory=list)
     confidence: float = 0.0
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
@@ -38,6 +43,13 @@ class AnalysisReport:
             "dimension_count": self.dimension_count,
             "scale_factor": self.scale_factor,
             "real_unit": self.real_unit,
+            "wall_count": self.wall_count,
+            "segments_analyzed": self.segments_analyzed,
+            "segments_ignored": self.segments_ignored,
+            "detected_walls": [
+                wall.to_dict()
+                for wall in self.detected_walls
+            ],
             "confidence": self.confidence,
             "warnings": list(self.warnings),
             "errors": list(self.errors),
@@ -51,6 +63,13 @@ class AnalysisReport:
             dimension_count=data.get("dimension_count", 0),
             scale_factor=data.get("scale_factor"),
             real_unit=data.get("real_unit", "cm"),
+            wall_count=data.get("wall_count", 0),
+            segments_analyzed=data.get("segments_analyzed", 0),
+            segments_ignored=data.get("segments_ignored", 0),
+            detected_walls=[
+                Wall.from_dict(wall_data)
+                for wall_data in data.get("detected_walls", [])
+            ],
             confidence=data.get("confidence", 0.0),
             warnings=list(data.get("warnings", [])),
             errors=list(data.get("errors", [])),
@@ -60,13 +79,13 @@ class AnalysisReport:
 
 class BuildingAnalyzer:
     """
-    Orchestrate the V0.7.2 building analysis pipeline.
+    Orchestrate the building analysis pipeline.
     """
 
     PIPELINE_STEPS = [
         "unit_detection",
         "calibration",
-        "wall_detection_placeholder",
+        "wall_detection",
         "opening_detection_placeholder",
         "room_detection_placeholder",
         "analysis_report",
@@ -128,6 +147,7 @@ class BuildingAnalyzer:
             unit_detection=unit_detection,
             dimension_count=len(dimension_result.dimensions),
             calibration=calibration,
+            wall_result=wall_result,
             warnings=warnings,
             errors=errors,
         )
@@ -143,6 +163,7 @@ class BuildingAnalyzer:
         unit_detection: UnitDetection,
         dimension_count: int,
         calibration: CalibrationResult,
+        wall_result: WallDetectionResult,
         warnings: list[str],
         errors: list[str],
     ) -> AnalysisReport:
@@ -151,9 +172,14 @@ class BuildingAnalyzer:
             dimension_count=dimension_count,
             scale_factor=calibration.scale_factor,
             real_unit=calibration.real_unit,
+            wall_count=len(wall_result.walls),
+            segments_analyzed=wall_result.segments_analyzed,
+            segments_ignored=wall_result.segments_ignored,
+            detected_walls=list(wall_result.walls),
             confidence=self._combined_confidence(
                 unit_detection.confidence,
                 calibration.confidence,
+                wall_result.confidence,
             ),
             warnings=warnings,
             errors=errors,
@@ -161,8 +187,22 @@ class BuildingAnalyzer:
         )
 
     @staticmethod
-    def _combined_confidence(unit_confidence: float, calibration_confidence: float) -> float:
-        if calibration_confidence <= 0:
-            return unit_confidence
+    def _combined_confidence(
+        unit_confidence: float,
+        calibration_confidence: float,
+        wall_confidence: float,
+    ) -> float:
+        scores = [
+            score
+            for score in (
+                unit_confidence,
+                calibration_confidence,
+                wall_confidence,
+            )
+            if score > 0
+        ]
 
-        return (unit_confidence + calibration_confidence) / 2.0
+        if not scores:
+            return 0.0
+
+        return sum(scores) / len(scores)

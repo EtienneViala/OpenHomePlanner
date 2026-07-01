@@ -1,6 +1,6 @@
 # OpenHomePlanner - Architecture
 
-Version : V0.7.2
+Version : V0.7.3
 
 ---
 
@@ -238,9 +238,9 @@ d'import, de dessin, de selection ou de suppression.
 
 # Analyse du batiment
 
-La V0.7.2 ajoute un package `analysis/` independant de Qt. Il prepare la
-transformation progressive d'un DXF en modele architectural, sans reconnaitre
-encore automatiquement les murs, ouvertures ou pieces.
+La V0.7.2 ajoute un package `analysis/` independant de Qt. La V0.7.3 active la
+premiere transformation automatique d'un DXF calibre en murs du modele
+architectural, sans reconnaitre encore les ouvertures ou les pieces.
 
 Pipeline :
 
@@ -254,7 +254,7 @@ v
 DimensionDetector + CalibrationEngine
 |
 v
-WallDetector placeholder
+WallDetector
 |
 v
 OpeningDetector placeholder
@@ -274,9 +274,21 @@ Responsabilites :
   dispose d'un fallback pour les cotes vectorisees en `LWPOLYLINE`
 - `CalibrationEngine` calcule un facteur d'echelle a partir des cotations,
   en centimetres par unite DXF par defaut
+- `WallDetector` extrait les segments `DXFLine` et `DXFPolyline`, ignore les
+  fragments trop courts, fusionne des segments colineaires proches et detecte
+  des paires de lignes paralleles pouvant former un mur
 - `AnalysisReport` expose une serialisation `to_dict()` / `from_dict()`
-- `WallDetector`, `OpeningDetector` et `RoomDetector` sont des squelettes
-  documentes, remplacables independamment dans les versions futures
+- `OpeningDetector` et `RoomDetector` restent des squelettes documentes,
+  remplacables independamment dans les versions futures
+
+Limites V0.7.3 :
+
+- les portes ne sont pas detectees
+- les fenetres ne sont pas detectees
+- les pieces ne sont pas detectees
+- les circuits electriques et la plomberie ne sont pas analyses
+- la detection de murs est volontairement approximative et privilegie les
+  segments longs, paralleles et proches
 
 ---
 
@@ -342,6 +354,11 @@ Le Canvas ne connaît jamais les objets.
 
 Depuis la V0.7.1, `WallItem` est enregistre dans le registre pour le modele
 `Wall`. Le Canvas ne contient aucun branchement specifique aux murs.
+
+Depuis la V0.7.3, les murs crees par `WallDetector` reutilisent exactement le
+meme flux que les murs manuels : `Project.add_object(...)` ajoute le `Wall` a
+l'`ObjectManager` pour l'affichage et a l'etage par defaut du `House` pour le
+modele architectural. `GraphicsFactory` cree ensuite le `WallItem` existant.
 
 ---
 

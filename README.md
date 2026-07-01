@@ -5,13 +5,15 @@ d'une habitation a partir d'un plan existant, notamment au format DXF.
 
 ## Version de travail
 
-V0.7.2 finalisee : import DXF, affichage du plan comme fond de travail,
+V0.7.3 finalisee : import DXF, affichage du plan comme fond de travail,
 gestion des calques, barre d'outils, barre d'etat, snap activable,
 ghost preview generique et modele architectural pur Python pour representer
 une habitation. La V0.7.1 ajoute le premier outil architectural manuel :
 `WallTool`. La V0.7.2 ajoute l'infrastructure d'analyse DXF du batiment :
 detecteur d'unites, detecteur de cotations, moteur de calibration, rapport
-serialisable et detecteurs squelettes pour les futures analyses.
+serialisable et detecteurs squelettes pour les futures analyses. La V0.7.3
+active une premiere detection automatique des murs depuis les lignes et
+polylignes du DXF calibre.
 
 ## Lancer l'application
 
@@ -48,6 +50,15 @@ serialisation.
 
 ```bash
 py scripts/check_v072.py rochette.dxf
+```
+
+## Verifier la V0.7.3
+
+Un script dedie valide la detection automatique de murs, l'integration avec le
+rapport d'analyse et les non-regressions V0.7.2, V0.7.1 et V0.6.2.
+
+```bash
+py scripts/check_v073.py rochette.dxf
 ```
 
 ## Importer un plan DXF
@@ -97,3 +108,10 @@ cotations lit aussi les cotes vectorisees en polylignes, comme la cote `410`
 de `rochette.dxf`, et le `Canvas` applique le facteur calcule au `DXFItem`.
 Cette version ne reconnait pas encore automatiquement les murs, ouvertures ou
 pieces.
+
+La V0.7.3 remplace le placeholder `WallDetector` par une premiere detection
+exploitable : extraction de segments `DXFLine` / `DXFPolyline`, filtrage des
+segments trop courts, fusion simple de fragments colineaires et recherche de
+lignes paralleles proches. Les murs produits sont des `Wall` en centimetres et
+sont ajoutes au `Project` depuis l'action `Analyse > Detecter les murs`.
+Portes, fenetres, pieces, circuits et plomberie ne sont pas encore detectes.

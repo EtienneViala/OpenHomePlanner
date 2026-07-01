@@ -71,6 +71,7 @@ class MainWindow(QMainWindow):
         self.action_open_svg = QAction("Importer SVG", self)
         self.action_import_dxf = QAction("Importer un DXF...", self)
         self.action_save = QAction("Sauvegarder", self)
+        self.action_detect_walls = QAction("Detecter les murs", self)
         self.action_exit = QAction("Quitter", self)
         self.action_about = QAction("A propos", self)
 
@@ -81,6 +82,7 @@ class MainWindow(QMainWindow):
 
         self.action_import_dxf.triggered.connect(self.import_dxf)
         self.action_open_svg.triggered.connect(self.import_svg)
+        self.action_detect_walls.triggered.connect(self.detect_walls)
         self.action_exit.triggered.connect(self.close)
         self.action_about.triggered.connect(self.about)
 
@@ -96,6 +98,9 @@ class MainWindow(QMainWindow):
         file_menu.addAction(self.action_save)
         file_menu.addSeparator()
         file_menu.addAction(self.action_exit)
+
+        analysis_menu = menu.addMenu("&Analyse")
+        analysis_menu.addAction(self.action_detect_walls)
 
         help_menu = menu.addMenu("&Aide")
         help_menu.addAction(self.action_about)
@@ -212,12 +217,38 @@ class MainWindow(QMainWindow):
         self.canvas.import_svg(self.current_file)
         self.statusBar().showMessage(str(self.current_file))
 
+    def detect_walls(self):
+        """
+        Run wall detection on the already loaded DXF and add walls to Project.
+        """
+        if self.project.dxf_document is None:
+            QMessageBox.information(
+                self,
+                "Detection des murs",
+                "Importez d'abord un DXF.",
+            )
+            return
+
+        report = BuildingAnalyzer().analyze(self.project.dxf_document)
+        self.project.set_analysis_report(report)
+
+        for wall in report.detected_walls:
+            self.project.add_object(wall)
+
+        message = f"{report.wall_count} murs detectes"
+        self.statusBar().showMessage(message)
+        QMessageBox.information(
+            self,
+            "Detection des murs",
+            message,
+        )
+
     def about(self):
 
         QMessageBox.information(
             self,
             "OpenHomePlanner",
-            "OpenHomePlanner\n\nVersion 0.7.2",
+            "OpenHomePlanner\n\nVersion 0.7.3",
         )
 
     def activate_tool(self, tool_name: str):
