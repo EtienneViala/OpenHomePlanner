@@ -42,6 +42,7 @@ class Canvas(QGraphicsView):
         self.project.objects.connect_removed(self.on_object_removed)
         self.tool_manager = ToolManager(self)
         self._items_by_object = {}
+        self._preview_item = None
         self._snap_enabled = True
         self._grid_visible = True
         
@@ -297,6 +298,35 @@ class Canvas(QGraphicsView):
 
         if item is not None:
             self.scene.removeItem(item)
+
+    def show_preview_item(self, item):
+        """
+        Display a temporary preview item.
+        """
+        if self._preview_item is not None:
+            self.remove_preview_item()
+
+        self._preview_item = item
+        self.scene.addItem(item)
+
+    def move_preview_item(self, position: QPointF):
+        """
+        Move the visible temporary preview item.
+        """
+        if self._preview_item is None:
+            return
+
+        self._preview_item.setPos(position)
+
+    def remove_preview_item(self):
+        """
+        Remove the visible temporary preview item.
+        """
+        if self._preview_item is None:
+            return
+
+        self.scene.removeItem(self._preview_item)
+        self._preview_item = None
 
     def on_selection_changed(self):
 

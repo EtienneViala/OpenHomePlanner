@@ -6,9 +6,9 @@ Derniere mise a jour : 2026-07-01
 
 # Etat global
 
-Version de travail : V0.6.2 finalisee
+Version de travail : V0.7.0 finalisee
 
-OpenHomePlanner est actuellement capable d'importer un plan DXF, de l'afficher comme fond de plan, de placer des objets electriques simples, de gerer leur selection, de proposer une experience utilisateur stabilisee et d'afficher une preview temporaire pour les outils de placement.
+OpenHomePlanner est actuellement capable d'importer un plan DXF, de l'afficher comme fond de plan, de placer des objets electriques simples, de gerer leur selection, de proposer une experience utilisateur stabilisee, d'afficher une preview temporaire pour les outils de placement et de stocker un modele architectural pur Python dans le Project.
 
 Le travail recent porte sur la structuration du DXF et la gestion des calques, afin de preparer les fonctions de filtrage, de reconnaissance et d'annotation.
 
@@ -103,11 +103,24 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Suppression automatique de la preview lors du changement d'outil
 - Aucun objet metier cree avant le clic utilisateur
 
+## V0.7.0 - Modele architectural
+
+- Ajout de `House` pour representer une habitation complete
+- Ajout de `Floor` pour representer un etage
+- Ajout de `Room` pour representer une piece
+- Ajout de `Wall` pour representer un mur sans dessin
+- Ajout de `Opening`, `Door` et `Window` pour preparer les ouvertures
+- Integration de `House` et `DXFDocument` dans `Project`
+- Ajout d'une serialisation simple avec `to_dict()` / `from_dict()`
+- Preparation de `GraphicsFactory` avec un registre extensible
+- Ajout de tests unitaires independants de Qt
+- Aucun `WallTool`, `WallItem`, dessin, analyse DXF ou reconnaissance automatique
+
 ---
 
 # En cours
 
-## Stabilisation V0.6.2 terminee
+## Stabilisation V0.7.0 terminee
 
 - Import reel teste avec `rochette.dxf` : 191 entites importees
 - Calques detectes sur le fichier de test : `0`, `Defpoints`, `Layer 1`
@@ -117,6 +130,7 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Suppression d'objets validee via le flux Project/ObjectManager/Canvas
 - Ghost preview validee par compilation Python
 - Check automatique disponible : `py scripts/check_v062.py rochette.dxf`
+- Modele architectural valide par tests unitaires sans Qt
 
 ---
 
@@ -129,6 +143,7 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Le DXF doit rester un fond de plan verrouille
 - Les objets du projet doivent rester au-dessus du DXF
 - Les previews doivent rester temporaires, hors `Project` et hors selection
+- Le modele architectural doit rester pur Python et ne doit pas declencher de dessin
 
 ---
 
@@ -146,13 +161,18 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Verifier visuellement le panneau `Layers` sur plusieurs fichiers DXF reels
 - Corriger progressivement les anciens textes encodes incorrectement
 
-## V0.7 - Reconnaissance du plan
+## V0.7.1 - Outil mur
 
-- Reconnaissance automatique des murs
-- Reconnaissance des portes
-- Reconnaissance des fenetres
-- Accrochage intelligent des objets
-- Rotation automatique des equipements selon les murs
+- WallTool
+- Placement manuel des murs
+- Preview de mur reutilisant l'infrastructure V0.6.2
+
+## V0.7.2 - Analyse du batiment
+
+- Analyse automatique du batiment
+- Reconnaissance future des murs
+- Reconnaissance future des portes
+- Reconnaissance future des fenetres
 
 ## V0.8 - Equipements electriques
 
@@ -239,3 +259,14 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Ajout de la preview generique de placement pour `OutletTool`
 - Mise a jour de la documentation d'architecture
 - Ajout de `scripts/check_v062.py` pour valider automatiquement la V0.6.2
+
+## 2026-07-01 - V0.7.0
+
+- Ajout de `model/architecture.py`
+- Ajout des classes `House`, `Floor`, `Room`, `Wall`, `Opening`, `Door`, `Window`
+- Integration de `House` dans `core/project.py`
+- Ajout du stockage du `DXFDocument` dans `Project`
+- Connexion de l'import DXF au `Project`
+- Transformation de `GraphicsFactory` en registre extensible
+- Ajout de `tests/test_architecture_model.py`
+- Mise a jour du README et de l'architecture

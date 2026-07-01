@@ -167,6 +167,7 @@ class MainWindow(QMainWindow):
             return
 
         self.current_file = filename
+        self.project.set_dxf_document(document)
         self.canvas.load_dxf(document)
         self.statusBar().showMessage(f"DXF importe : {filename}")
 

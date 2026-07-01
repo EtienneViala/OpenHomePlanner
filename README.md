@@ -5,10 +5,10 @@ d'une habitation a partir d'un plan existant, notamment au format DXF.
 
 ## Version de travail
 
-V0.6.2 finalisee : import DXF, affichage du plan comme fond de travail,
+V0.7.0 finalisee : import DXF, affichage du plan comme fond de travail,
 gestion des calques, barre d'outils, barre d'etat, snap activable,
-ajustement automatique de la vue, suppression propre des objets et systeme
-generique de ghost preview pour les outils de placement.
+ghost preview generique et modele architectural pur Python pour representer
+une habitation.
 
 ## Lancer l'application
 
@@ -59,5 +59,10 @@ La preview V0.6.2 est temporaire : elle n'est pas stockee dans le `Project`,
 ne cree aucun objet metier avant le clic et disparait automatiquement lors du
 changement d'outil.
 
-La V0.6.2 ne contient pas de reconnaissance de murs, d'interrupteurs ou de
-circuits electriques. Ces sujets restent reserves aux versions suivantes.
+La V0.7.0 ajoute le modele architectural `House`, `Floor`, `Room`, `Wall`,
+`Opening`, `Door` et `Window`. Ce modele est integre au `Project`, serialisable
+via `to_dict()` / `from_dict()` et reste totalement independant de Qt.
+
+La V0.7.0 ne contient pas de WallTool, WallItem, reconnaissance de murs,
+analyse DXF ou circuits electriques. Ces sujets restent reserves aux versions
+suivantes.

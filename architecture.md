@@ -1,6 +1,6 @@
 # OpenHomePlanner - Architecture
 
-Version : V0.6.2
+Version : V0.7.0
 
 ---
 
@@ -117,6 +117,7 @@ importer/
 library/
 
 model/
+    architecture.py
     base_object.py
     electrical.py
     dxf.py
@@ -170,6 +171,35 @@ Ils décrivent uniquement la réalité.
 
 ---
 
+# Modele architectural
+
+La V0.7.0 ajoute un modele architectural pur Python. Il prepare les futures
+versions de dessin et d'analyse sans ajouter d'outil graphique.
+
+```
+House
+|-- Floor
+|   |-- Room
+|   |-- Wall
+|       |-- Opening
+|           |-- Door
+|           |-- Window
+```
+
+Responsabilites :
+
+- `House` represente l'habitation complete, son nom, son adresse, ses etages et ses parametres
+- `Floor` represente un niveau avec ses pieces et ses murs
+- `Room` represente une piece, sa surface future, son contour et ses murs associes
+- `Wall` represente un segment de mur, ses points, son epaisseur, sa hauteur, son materiau et son orientation
+- `Opening` represente une ouverture associee a un mur
+- `Door` et `Window` specialisent `Opening` sans comportement graphique
+
+Toutes ces classes exposent une serialisation simple avec `to_dict()` et
+`from_dict()` lorsque la reconstruction est necessaire.
+
+---
+
 # Le Project
 
 Le Project est le cœur du logiciel.
@@ -179,17 +209,10 @@ Il contient tous les objets.
 ```
 Project
 
-│
-
-├── Electrical
-
-├── Plumbing
-
-├── HVAC
-
-├── DXFDocument
-
-└── Settings
+|-- DXFDocument
+|-- House
+|-- ObjectManager
+|-- SelectionManager
 ```
 
 Toutes les modifications passent obligatoirement par le Project.
@@ -254,15 +277,11 @@ Outlet
 OutletItem
 ```
 
-```
-Wall
-
-↓
-
-WallItem
-```
-
 Le Canvas ne connaît jamais les objets.
+
+En V0.7.0, `GraphicsFactory` dispose d'un registre extensible. Aucun item
+graphique architectural n'est enregistre : pas de `WallItem`, `DoorItem`,
+`WindowItem` ou `RoomItem`.
 
 ---
 
