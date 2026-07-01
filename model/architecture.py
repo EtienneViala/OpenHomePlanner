@@ -9,10 +9,12 @@ building analysis features.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from math import atan2, degrees, hypot
 from uuid import uuid4
 
 
 Point = tuple[float, float]
+DEFAULT_WALL_THICKNESS = 20.0
 
 
 def _new_uid() -> str:
@@ -107,11 +109,46 @@ class Wall(ArchitecturalObject):
 
     start: Point = (0.0, 0.0)
     end: Point = (0.0, 0.0)
-    thickness: float = 20.0
+    thickness: float = DEFAULT_WALL_THICKNESS
     height: float = 250.0
     material: str = ""
     orientation: float = 0.0
     openings: list[Opening] = field(default_factory=list)
+
+    @property
+    def length(self) -> float:
+        """
+        Return the wall length in project units.
+        """
+        return hypot(
+            self.end[0] - self.start[0],
+            self.end[1] - self.start[1],
+        )
+
+    @property
+    def angle(self) -> float:
+        """
+        Return the wall angle in degrees.
+        """
+        return degrees(
+            atan2(
+                self.end[1] - self.start[1],
+                self.end[0] - self.start[0],
+            )
+        )
+
+    def move(self, dx: float, dy: float) -> None:
+        """
+        Move both wall endpoints.
+        """
+        self.start = (
+            self.start[0] + dx,
+            self.start[1] + dy,
+        )
+        self.end = (
+            self.end[0] + dx,
+            self.end[1] + dy,
+        )
 
     def add_opening(self, opening: Opening) -> None:
         """
@@ -130,6 +167,8 @@ class Wall(ArchitecturalObject):
                 "height": self.height,
                 "material": self.material,
                 "orientation": self.orientation,
+                "length": self.length,
+                "angle": self.angle,
                 "openings": [
                     opening.to_dict()
                     for opening in self.openings
@@ -145,7 +184,7 @@ class Wall(ArchitecturalObject):
             uid=data.get("uid", _new_uid()),
             start=tuple(data.get("start", (0.0, 0.0))),
             end=tuple(data.get("end", (0.0, 0.0))),
-            thickness=data.get("thickness", 20.0),
+            thickness=data.get("thickness", DEFAULT_WALL_THICKNESS),
             height=data.get("height", 250.0),
             material=data.get("material", ""),
             orientation=data.get("orientation", 0.0),
@@ -216,7 +255,8 @@ class Floor(ArchitecturalObject):
         self.rooms.append(room)
 
     def add_wall(self, wall: Wall) -> None:
-        self.walls.append(wall)
+        if wall not in self.walls:
+            self.walls.append(wall)
 
     def to_dict(self) -> dict:
         data = self.base_dict()

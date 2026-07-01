@@ -50,6 +50,18 @@ class Tool:
         """
         return None
 
+    def preview_position(self, snapped_position):
+        """
+        Return the scene position where the active preview item should be placed.
+        """
+        return snapped_position
+
+    def keep_preview_after_press(self) -> bool:
+        """
+        Return True when a handled click should keep the visible preview.
+        """
+        return False
+
     # ---------------------------------------------------------
 
     def mouse_press(self, event):

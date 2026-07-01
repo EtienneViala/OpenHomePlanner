@@ -1,6 +1,6 @@
 # OpenHomePlanner - Architecture
 
-Version : V0.7.0
+Version : V0.7.1
 
 ---
 
@@ -105,6 +105,7 @@ core/
 graphics/
     base_item.py
     outlet_item.py
+    wall_item.py
     dxf_item.py
     factory.py
     preview_item.py
@@ -127,6 +128,7 @@ tools/
     tool_manager.py
     select_tool.py
     outlet_tool.py
+    wall_tool.py
 
 ui/
     main_window.py
@@ -279,9 +281,8 @@ OutletItem
 
 Le Canvas ne connaît jamais les objets.
 
-En V0.7.0, `GraphicsFactory` dispose d'un registre extensible. Aucun item
-graphique architectural n'est enregistre : pas de `WallItem`, `DoorItem`,
-`WindowItem` ou `RoomItem`.
+Depuis la V0.7.1, `WallItem` est enregistre dans le registre pour le modele
+`Wall`. Le Canvas ne contient aucun branchement specifique aux murs.
 
 ---
 
@@ -334,6 +335,8 @@ Regles :
 - aucun objet metier n'est cree avant le clic utilisateur
 - aucun item de preview n'est conserve dans le `Project`
 - la preview est non selectionnable et semi-transparente
+- la V0.7.1 etend la meme infrastructure pour la preview orientee des murs,
+  avec longueur, angle et epaisseur
 
 ---
 
@@ -372,6 +375,28 @@ Tool
 Les outils créent uniquement des objets métier.
 
 Ils ne dessinent jamais directement.
+
+---
+
+## WallTool
+
+`WallTool` est le premier outil architectural manuel. Il suit le flux standard :
+
+```
+Premier clic -> point de depart
+Souris -> preview de mur
+Deuxieme clic -> creation du Wall
+Project -> ObjectManager -> GraphicsFactory -> WallItem
+```
+
+Le mur cree reutilise exclusivement `model.architecture.Wall`. Son epaisseur
+par defaut est centralisee par `DEFAULT_WALL_THICKNESS`. Le `Project` reference
+le mur dans l'`ObjectManager` pour l'affichage et dans l'etage par defaut du
+`House` pour conserver le modele architectural.
+
+`WallItem` affiche un rectangle oriente base sur les deux extremites du mur,
+avec un contour de selection et un pen cosmetique pour rester lisible quel que
+soit le zoom. Le deplacement met a jour les deux points du `Wall`.
 
 ---
 

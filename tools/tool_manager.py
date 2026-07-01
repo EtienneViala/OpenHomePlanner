@@ -55,7 +55,11 @@ class ToolManager(QObject):
 
         handled = self.current_tool.mouse_press(event)
 
-        if handled:
+        self.preview.set_preview(
+            self.current_tool.preview_definition()
+        )
+
+        if handled and not self.current_tool.keep_preview_after_press():
             self.preview.hide_item()
 
         return handled
@@ -76,11 +80,17 @@ class ToolManager(QObject):
         if self.current_tool is None:
             return False
 
+        handled = self.current_tool.mouse_move(event)
+        snapped_position = self.canvas.snap_position(event)
+
+        self.preview.set_preview(
+            self.current_tool.preview_definition()
+        )
         self.preview.move_to(
-            self.canvas.snap_position(event)
+            self.current_tool.preview_position(snapped_position)
         )
 
-        return self.current_tool.mouse_move(event)
+        return handled
 
     # ---------------------------------------------------------
 

@@ -28,8 +28,17 @@ class PreviewManager:
         """
         Replace the active preview definition.
         """
-        self.clear()
+        if definition == self._definition:
+            return
+
+        if definition is None:
+            self.clear()
+            return
+
         self._definition = definition
+
+        if self._item is not None:
+            self._item.set_definition(definition)
 
     def move_to(self, position: QPointF) -> None:
         """

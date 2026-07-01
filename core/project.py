@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from core.object_manager import ObjectManager
 from core.selection_manager import SelectionManager
-from model.architecture import House
+from model.architecture import Floor, House, Wall
 
 
 class Project:
@@ -31,11 +31,19 @@ class Project:
 
     def add_object(self, obj):
 
+        if isinstance(obj, Wall):
+            self._default_floor().add_wall(obj)
+
         self.objects.add(obj)
 
     # ---------------------------------------------------------
 
     def remove_object(self, obj):
+
+        if isinstance(obj, Wall):
+            for floor in self.house.floors:
+                if obj in floor.walls:
+                    floor.walls.remove(obj)
 
         self.objects.remove(obj)
 
@@ -46,6 +54,22 @@ class Project:
         Store the imported DXF document in the project.
         """
         self.dxf_document = document
+
+    # ---------------------------------------------------------
+
+    def _default_floor(self) -> Floor:
+        """
+        Return the default floor used by manual architectural tools.
+        """
+        if not self.house.floors:
+            self.house.add_floor(
+                Floor(
+                    name="RDC",
+                    level=0,
+                )
+            )
+
+        return self.house.floors[0]
 
     # ---------------------------------------------------------
 

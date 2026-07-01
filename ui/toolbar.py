@@ -44,7 +44,14 @@ class MainToolBar(QToolBar):
             lambda: self.toolRequested.emit("outlet")
         )
 
+        self.wall_action = QAction("Mur", self)
+        self.wall_action.setCheckable(True)
+        self.wall_action.triggered.connect(
+            lambda: self.toolRequested.emit("wall")
+        )
+
         self.tool_group.addAction(self.select_action)
+        self.tool_group.addAction(self.wall_action)
         self.tool_group.addAction(self.outlet_action)
 
         self.zoom_in_action = QAction("Zoom +", self)
@@ -68,6 +75,7 @@ class MainToolBar(QToolBar):
         self.grid_action.toggled.connect(self.gridToggled.emit)
 
         self.addAction(self.select_action)
+        self.addAction(self.wall_action)
         self.addAction(self.outlet_action)
         self.addSeparator()
         self.addAction(self.zoom_in_action)
@@ -83,6 +91,7 @@ class MainToolBar(QToolBar):
         """
         actions = {
             "select": self.select_action,
+            "wall": self.wall_action,
             "outlet": self.outlet_action,
         }
 

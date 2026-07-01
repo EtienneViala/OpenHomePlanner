@@ -13,6 +13,7 @@ from core.project import Project
 from importer.dxf_importer import DXFImporter, DXFImportError
 from tools.outlet_tool import OutletTool
 from tools.select_tool import SelectTool
+from tools.wall_tool import WallTool
 from ui.canvas import Canvas
 from ui.layers_panel import LayersPanel
 from ui.library_panel import LibraryPanel
@@ -199,7 +200,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(
             self,
             "OpenHomePlanner",
-            "OpenHomePlanner\n\nVersion 0.6.2",
+            "OpenHomePlanner\n\nVersion 0.7.1",
         )
 
     def activate_tool(self, tool_name: str):
@@ -211,6 +212,10 @@ class MainWindow(QMainWindow):
         elif tool_name == "outlet":
             self.canvas.tool_manager.set_tool(
                 OutletTool(self.canvas)
+            )
+        elif tool_name == "wall":
+            self.canvas.tool_manager.set_tool(
+                WallTool(self.canvas)
             )
 
     def on_tool_changed(self, tool_id: str, tool_name: str):

@@ -5,10 +5,13 @@ d'une habitation a partir d'un plan existant, notamment au format DXF.
 
 ## Version de travail
 
-V0.7.0 finalisee : import DXF, affichage du plan comme fond de travail,
+V0.7.1 finalisee : import DXF, affichage du plan comme fond de travail,
 gestion des calques, barre d'outils, barre d'etat, snap activable,
 ghost preview generique et modele architectural pur Python pour representer
-une habitation.
+une habitation. La V0.7.1 ajoute le premier outil architectural manuel :
+`WallTool`, avec creation de murs en deux clics, preview de longueur,
+orientation et epaisseur, selection, deplacement, suppression et affichage des
+proprietes.
 
 ## Lancer l'application
 
@@ -28,6 +31,15 @@ py scripts/check_v062.py rochette.dxf
 Le script affiche un resume `OK` / `FAIL` pour chaque etape et retourne le code
 `0` si tous les checks passent.
 
+## Verifier la V0.7.1
+
+Un script dedie valide le dessin manuel des murs, le `WallItem`, l'ajout au
+`Project`, la preview et la suppression.
+
+```bash
+py scripts/check_v071.py
+```
+
 ## Importer un plan DXF
 
 Depuis l'application :
@@ -46,8 +58,8 @@ leur verrouillage.
 - `Ctrl+0` ajuste la vue au contenu.
 - `Suppr` supprime la selection.
 - `Ctrl+A` selectionne tous les objets du projet.
-- La toolbar permet d'activer Selection, Prise, Zoom +, Zoom -, Ajuster au plan,
-  Snap ON/OFF et Afficher/Masquer la grille.
+- La toolbar permet d'activer Selection, Mur, Prise, Zoom +, Zoom -, Ajuster au
+  plan, Snap ON/OFF et Afficher/Masquer la grille.
 
 ## Architecture
 
@@ -63,6 +75,7 @@ La V0.7.0 ajoute le modele architectural `House`, `Floor`, `Room`, `Wall`,
 `Opening`, `Door` et `Window`. Ce modele est integre au `Project`, serialisable
 via `to_dict()` / `from_dict()` et reste totalement independant de Qt.
 
-La V0.7.0 ne contient pas de WallTool, WallItem, reconnaissance de murs,
-analyse DXF ou circuits electriques. Ces sujets restent reserves aux versions
-suivantes.
+La V0.7.1 reutilise ce modele `Wall` pour le dessin manuel. `WallTool` cree un
+mur en deux clics, `GraphicsFactory` cree automatiquement le `WallItem`, et la
+preview V0.6.2 affiche le futur mur avant creation. La version ne contient pas
+de reconnaissance automatique, d'analyse DXF ou d'outils portes/fenetres.

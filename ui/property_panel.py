@@ -12,6 +12,8 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
 )
 
+from model.architecture import Wall
+
 
 class PropertyPanel(QDockWidget):
     """
@@ -67,6 +69,23 @@ class PropertyPanel(QDockWidget):
         if obj is None:
             return
 
+        if isinstance(obj, Wall):
+            properties = {
+                "Type": "Wall",
+                "Name": obj.name,
+                "Longueur": f"{obj.length:.2f} cm",
+                "Angle": f"{obj.angle:.2f} deg",
+                "Epaisseur": f"{obj.thickness:.2f} cm",
+                "Position debut": (
+                    f"{obj.start[0]:.2f}, {obj.start[1]:.2f}"
+                ),
+                "Position fin": (
+                    f"{obj.end[0]:.2f}, {obj.end[1]:.2f}"
+                ),
+            }
+            self._display_properties(properties)
+            return
+
         properties = {
             "Type": obj.__class__.__name__,
             "Name": getattr(obj, "name", ""),
@@ -86,6 +105,10 @@ class PropertyPanel(QDockWidget):
                 continue
 
             properties[key] = value
+
+        self._display_properties(properties)
+
+    def _display_properties(self, properties: dict) -> None:
 
         self.table.setRowCount(len(properties))
 

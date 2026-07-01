@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 
 ColorTuple = tuple[int, int, int]
+PointTuple = tuple[float, float]
 
 
 @dataclass(frozen=True)
@@ -26,3 +27,8 @@ class PreviewDefinition:
     fill_color: ColorTuple = (30, 30, 30)
     opacity: float = 0.5
     z_value: float = 10_000.0
+    start: PointTuple | None = None
+    end: PointTuple | None = None
+    thickness: float = 0.0
+    length: float = 0.0
+    angle: float = 0.0

@@ -5,16 +5,17 @@ Graphics factory.
 from __future__ import annotations
 
 from model.electrical import Outlet
+from model.architecture import Wall
 from graphics.outlet_item import OutletItem
+from graphics.wall_item import WallItem
 
 
 class GraphicsFactory:
     """
     Create permanent graphics items registered for project objects.
 
-    Architectural model objects are intentionally not registered in V0.7.0:
-    this version prepares data only and does not draw walls, rooms, doors or
-    windows.
+    Graphics items are registered by model type so new tools can extend the
+    application without adding object-specific if/else branches.
     """
 
     _registry = {}
@@ -39,3 +40,4 @@ class GraphicsFactory:
 
 
 GraphicsFactory.register(Outlet, OutletItem)
+GraphicsFactory.register(Wall, WallItem)

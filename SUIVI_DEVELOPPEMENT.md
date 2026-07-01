@@ -6,9 +6,9 @@ Derniere mise a jour : 2026-07-01
 
 # Etat global
 
-Version de travail : V0.7.0 finalisee
+Version de travail : V0.7.1 finalisee
 
-OpenHomePlanner est actuellement capable d'importer un plan DXF, de l'afficher comme fond de plan, de placer des objets electriques simples, de gerer leur selection, de proposer une experience utilisateur stabilisee, d'afficher une preview temporaire pour les outils de placement et de stocker un modele architectural pur Python dans le Project.
+OpenHomePlanner est actuellement capable d'importer un plan DXF, de l'afficher comme fond de plan, de placer des objets electriques simples, de dessiner manuellement des murs, de gerer leur selection, de proposer une experience utilisateur stabilisee, d'afficher une preview temporaire pour les outils de placement et de stocker un modele architectural pur Python dans le Project.
 
 Le travail recent porte sur la structuration du DXF et la gestion des calques, afin de preparer les fonctions de filtrage, de reconnaissance et d'annotation.
 
@@ -116,11 +116,27 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Ajout de tests unitaires independants de Qt
 - Aucun `WallTool`, `WallItem`, dessin, analyse DXF ou reconnaissance automatique
 
+## V0.7.1 - Outil mur manuel
+
+- Ajout de `WallTool` pour creer un mur en deux clics
+- Reutilisation du modele `model.architecture.Wall`
+- Ajout de `DEFAULT_WALL_THICKNESS` pour centraliser l'epaisseur par defaut
+- Ajout des proprietes calculees `length` et `angle` au modele `Wall`
+- Ajout de `WallItem` pour afficher un mur sous forme de rectangle oriente
+- Enregistrement de `WallItem` dans `GraphicsFactory`
+- Extension de la preview V0.6.2 avec la forme dynamique `wall`
+- Affichage de la longueur, de l'angle et de l'epaisseur pendant la preview
+- Ajout du bouton `Mur` dans la toolbar et de l'activation depuis la bibliotheque
+- Affichage lecture seule des proprietes d'un mur selectionne
+- Suppression des murs via le flux existant `Project.remove_object(...)`
+- Ajout de `tests/test_wall_tool.py`
+- Ajout de `scripts/check_v071.py`
+
 ---
 
 # En cours
 
-## Stabilisation V0.7.0 terminee
+## Stabilisation V0.7.1 terminee
 
 - Import reel teste avec `rochette.dxf` : 191 entites importees
 - Calques detectes sur le fichier de test : `0`, `Defpoints`, `Layer 1`
@@ -131,6 +147,8 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Ghost preview validee par compilation Python
 - Check automatique disponible : `py scripts/check_v062.py rochette.dxf`
 - Modele architectural valide par tests unitaires sans Qt
+- WallTool valide par tests Qt offscreen
+- Check automatique V0.7.1 disponible : `py scripts/check_v071.py`
 
 ---
 
@@ -160,12 +178,6 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 
 - Verifier visuellement le panneau `Layers` sur plusieurs fichiers DXF reels
 - Corriger progressivement les anciens textes encodes incorrectement
-
-## V0.7.1 - Outil mur
-
-- WallTool
-- Placement manuel des murs
-- Preview de mur reutilisant l'infrastructure V0.6.2
 
 ## V0.7.2 - Analyse du batiment
 
@@ -270,3 +282,15 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Transformation de `GraphicsFactory` en registre extensible
 - Ajout de `tests/test_architecture_model.py`
 - Mise a jour du README et de l'architecture
+
+## 2026-07-01 - V0.7.1
+
+- Ajout de `graphics/wall_item.py`
+- Ajout de `tools/wall_tool.py`
+- Extension de `core/preview.py`, `graphics/preview_item.py` et
+  `graphics/preview_manager.py` pour la preview de mur
+- Enregistrement de `WallItem` dans `graphics/factory.py`
+- Integration de l'outil Mur dans `ui/main_window.py` et `ui/toolbar.py`
+- Extension de `ui/property_panel.py` pour les proprietes lecture seule du mur
+- Extension de `core/project.py` pour lier les murs au `House`
+- Ajout de tests unitaires et du script `scripts/check_v071.py`
