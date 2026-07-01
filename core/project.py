@@ -50,6 +50,32 @@ class Project:
 
     # ---------------------------------------------------------
 
+    def detected_walls(self) -> list[Wall]:
+        """
+        Return detected walls currently stored in the project.
+        """
+        return [
+            obj
+            for obj in self.objects
+            if isinstance(obj, Wall)
+            and getattr(obj, "source", "manual") == "detected"
+        ]
+
+    # ---------------------------------------------------------
+
+    def remove_detected_walls(self) -> int:
+        """
+        Remove only automatically detected walls through the standard flow.
+        """
+        walls = self.detected_walls()
+
+        for wall in walls:
+            self.remove_object(wall)
+
+        return len(walls)
+
+    # ---------------------------------------------------------
+
     def set_dxf_document(self, document) -> None:
         """
         Store the imported DXF document in the project.

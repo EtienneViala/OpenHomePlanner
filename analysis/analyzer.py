@@ -31,6 +31,8 @@ class AnalysisReport:
     wall_count: int = 0
     segments_analyzed: int = 0
     segments_ignored: int = 0
+    duplicates_removed: int = 0
+    average_wall_confidence: float = 0.0
     detected_walls: list[Wall] = field(default_factory=list)
     confidence: float = 0.0
     warnings: list[str] = field(default_factory=list)
@@ -46,6 +48,8 @@ class AnalysisReport:
             "wall_count": self.wall_count,
             "segments_analyzed": self.segments_analyzed,
             "segments_ignored": self.segments_ignored,
+            "duplicates_removed": self.duplicates_removed,
+            "average_wall_confidence": self.average_wall_confidence,
             "detected_walls": [
                 wall.to_dict()
                 for wall in self.detected_walls
@@ -66,6 +70,8 @@ class AnalysisReport:
             wall_count=data.get("wall_count", 0),
             segments_analyzed=data.get("segments_analyzed", 0),
             segments_ignored=data.get("segments_ignored", 0),
+            duplicates_removed=data.get("duplicates_removed", 0),
+            average_wall_confidence=data.get("average_wall_confidence", 0.0),
             detected_walls=[
                 Wall.from_dict(wall_data)
                 for wall_data in data.get("detected_walls", [])
@@ -175,6 +181,8 @@ class BuildingAnalyzer:
             wall_count=len(wall_result.walls),
             segments_analyzed=wall_result.segments_analyzed,
             segments_ignored=wall_result.segments_ignored,
+            duplicates_removed=wall_result.duplicates_removed,
+            average_wall_confidence=wall_result.average_confidence,
             detected_walls=list(wall_result.walls),
             confidence=self._combined_confidence(
                 unit_detection.confidence,

@@ -113,6 +113,10 @@ class Wall(ArchitecturalObject):
     height: float = 250.0
     material: str = ""
     orientation: float = 0.0
+    source: str = "manual"
+    confidence: float = 1.0
+    detection_id: str | None = None
+    metadata: dict = field(default_factory=dict)
     openings: list[Opening] = field(default_factory=list)
 
     @property
@@ -167,6 +171,10 @@ class Wall(ArchitecturalObject):
                 "height": self.height,
                 "material": self.material,
                 "orientation": self.orientation,
+                "source": self.source,
+                "confidence": self.confidence,
+                "detection_id": self.detection_id,
+                "metadata": dict(self.metadata),
                 "length": self.length,
                 "angle": self.angle,
                 "openings": [
@@ -188,6 +196,10 @@ class Wall(ArchitecturalObject):
             height=data.get("height", 250.0),
             material=data.get("material", ""),
             orientation=data.get("orientation", 0.0),
+            source=data.get("source", "manual"),
+            confidence=data.get("confidence", 1.0),
+            detection_id=data.get("detection_id"),
+            metadata=dict(data.get("metadata", {})),
         )
 
         for opening_data in data.get("openings", []):

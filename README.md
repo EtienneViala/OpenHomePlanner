@@ -5,7 +5,7 @@ d'une habitation a partir d'un plan existant, notamment au format DXF.
 
 ## Version de travail
 
-V0.7.3 finalisee : import DXF, affichage du plan comme fond de travail,
+V0.7.4 finalisee : import DXF, affichage du plan comme fond de travail,
 gestion des calques, barre d'outils, barre d'etat, snap activable,
 ghost preview generique et modele architectural pur Python pour representer
 une habitation. La V0.7.1 ajoute le premier outil architectural manuel :
@@ -13,7 +13,8 @@ une habitation. La V0.7.1 ajoute le premier outil architectural manuel :
 detecteur d'unites, detecteur de cotations, moteur de calibration, rapport
 serialisable et detecteurs squelettes pour les futures analyses. La V0.7.3
 active une premiere detection automatique des murs depuis les lignes et
-polylignes du DXF calibre.
+polylignes du DXF calibre. La V0.7.4 stabilise cette detection avec
+anti-doublons, source `manual` / `detected`, confiance et actions de nettoyage.
 
 ## Lancer l'application
 
@@ -59,6 +60,16 @@ rapport d'analyse et les non-regressions V0.7.2, V0.7.1 et V0.6.2.
 
 ```bash
 py scripts/check_v073.py rochette.dxf
+```
+
+## Verifier la V0.7.4
+
+Un script dedie valide l'anti-doublons, la suppression ciblee des murs
+detectes, la redetection sans accumulation et les non-regressions V0.7.3,
+V0.7.2, V0.7.1 et V0.6.2.
+
+```bash
+py scripts/check_v074.py rochette.dxf
 ```
 
 ## Importer un plan DXF
@@ -115,3 +126,11 @@ segments trop courts, fusion simple de fragments colineaires et recherche de
 lignes paralleles proches. Les murs produits sont des `Wall` en centimetres et
 sont ajoutes au `Project` depuis l'action `Analyse > Detecter les murs`.
 Portes, fenetres, pieces, circuits et plomberie ne sont pas encore detectes.
+
+La V0.7.4 rend cette detection plus exploitable : les seuils sont centralises,
+les doublons evidents sont retires, les murs detectes portent
+`source="detected"`, une confiance et un `detection_id`, tandis que les murs
+manuels restent `source="manual"`. Le menu `Analyse` propose aussi
+`Effacer les murs detectes` et `Redetecter les murs` pour valider visuellement
+le resultat sans accumuler de doublons. Les portes, fenetres, pieces, circuits
+et la plomberie restent hors perimetre.

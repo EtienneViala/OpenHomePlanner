@@ -76,6 +76,9 @@ class PropertyPanel(QDockWidget):
                 "Longueur": f"{obj.length:.2f} cm",
                 "Angle": f"{obj.angle:.2f} deg",
                 "Epaisseur": f"{obj.thickness:.2f} cm",
+                "Source": getattr(obj, "source", "manual"),
+                "Confiance": f"{getattr(obj, 'confidence', 1.0):.2f}",
+                "Detection ID": getattr(obj, "detection_id", "") or "",
                 "Position debut": (
                     f"{obj.start[0]:.2f}, {obj.start[1]:.2f}"
                 ),

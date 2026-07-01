@@ -16,6 +16,39 @@ Point = tuple[float, float]
 
 
 @dataclass(frozen=True)
+class WallDetectionSettings:
+    """
+    Centralized tolerances for first-pass wall detection.
+    """
+
+    min_segment_length: float = 40.0
+    min_wall_length: float = 60.0
+    min_wall_thickness: float = 5.0
+    max_wall_thickness: float = 60.0
+    preferred_min_thickness: float = 8.0
+    preferred_max_thickness: float = 35.0
+    angle_tolerance_degrees: float = 5.0
+    merge_offset_tolerance: float = 3.0
+    merge_gap_tolerance: float = 25.0
+    min_wall_confidence: float = 0.45
+    duplicate_length_tolerance: float = 15.0
+    duplicate_length_ratio: float = 0.08
+    duplicate_angle_tolerance: float = 3.0
+    duplicate_center_tolerance: float = 12.0
+    duplicate_endpoint_tolerance: float = 18.0
+    annotation_layer_keywords: tuple[str, ...] = (
+        "anno",
+        "annotation",
+        "cote",
+        "cot",
+        "dim",
+        "dimension",
+        "text",
+        "texte",
+    )
+
+
+@dataclass(frozen=True)
 class WallSegment:
     """
     Normalized project-space segment extracted from DXF geometry.
@@ -73,6 +106,8 @@ class WallDetectionResult:
     walls: list[Wall] = field(default_factory=list)
     segments_analyzed: int = 0
     segments_ignored: int = 0
+    duplicates_removed: int = 0
+    average_confidence: float = 0.0
     warnings: list[str] = field(default_factory=list)
     confidence: float = 0.0
 
@@ -84,6 +119,8 @@ class WallDetectionResult:
             ],
             "segments_analyzed": self.segments_analyzed,
             "segments_ignored": self.segments_ignored,
+            "duplicates_removed": self.duplicates_removed,
+            "average_confidence": self.average_confidence,
             "warnings": list(self.warnings),
             "confidence": self.confidence,
         }
@@ -92,27 +129,50 @@ class WallDetectionResult:
 class WallDetector:
     """
     Detect first-pass wall centerlines from pairs of close parallel segments.
-
-    The detector intentionally stays conservative: it extracts LINE and
-    LWPOLYLINE segments, filters tiny geometry, lightly merges collinear
-    fragments, then creates one Wall for each plausible close parallel pair.
     """
 
     def __init__(
         self,
-        min_segment_length: float = 40.0,
-        min_wall_thickness: float = 5.0,
-        max_wall_thickness: float = 60.0,
-        angle_tolerance_degrees: float = 5.0,
-        merge_offset_tolerance: float = 3.0,
-        merge_gap_tolerance: float = 25.0,
+        settings: WallDetectionSettings | None = None,
+        min_segment_length: float | None = None,
+        min_wall_thickness: float | None = None,
+        max_wall_thickness: float | None = None,
+        angle_tolerance_degrees: float | None = None,
+        merge_offset_tolerance: float | None = None,
+        merge_gap_tolerance: float | None = None,
     ):
-        self.min_segment_length = min_segment_length
-        self.min_wall_thickness = min_wall_thickness
-        self.max_wall_thickness = max_wall_thickness
-        self.angle_tolerance = angle_tolerance_degrees
-        self.merge_offset_tolerance = merge_offset_tolerance
-        self.merge_gap_tolerance = merge_gap_tolerance
+        self.settings = settings or WallDetectionSettings()
+
+        if min_segment_length is not None:
+            self.settings = self._replace_setting(
+                "min_segment_length",
+                min_segment_length,
+            )
+        if min_wall_thickness is not None:
+            self.settings = self._replace_setting(
+                "min_wall_thickness",
+                min_wall_thickness,
+            )
+        if max_wall_thickness is not None:
+            self.settings = self._replace_setting(
+                "max_wall_thickness",
+                max_wall_thickness,
+            )
+        if angle_tolerance_degrees is not None:
+            self.settings = self._replace_setting(
+                "angle_tolerance_degrees",
+                angle_tolerance_degrees,
+            )
+        if merge_offset_tolerance is not None:
+            self.settings = self._replace_setting(
+                "merge_offset_tolerance",
+                merge_offset_tolerance,
+            )
+        if merge_gap_tolerance is not None:
+            self.settings = self._replace_setting(
+                "merge_gap_tolerance",
+                merge_gap_tolerance,
+            )
 
     def detect(self, source: Any, calibration=None) -> WallDetectionResult:
         document = source if hasattr(source, "entities") else None
@@ -135,30 +195,37 @@ class WallDetector:
         ignored = 0
 
         for segment in raw_segments:
-            if segment.length < self.min_segment_length:
+            if self._ignore_segment(segment):
                 ignored += 1
                 continue
 
             usable_segments.append(segment)
 
         merged_segments = self._merge_collinear_segments(usable_segments)
-        walls = self._walls_from_parallel_pairs(merged_segments)
+        candidates = self._walls_from_parallel_pairs(
+            merged_segments,
+            has_scale=scale_factor != 1.0,
+        )
+        walls, duplicates_removed = self._remove_duplicate_walls(candidates)
 
         if not walls:
             warnings.append("Aucun mur probable detecte dans le DXF.")
 
-        confidence = self._confidence(
-            wall_count=len(walls),
-            segment_count=len(merged_segments),
-            has_scale=scale_factor != 1.0,
-        )
+        average_confidence = self._average_wall_confidence(walls)
 
         return WallDetectionResult(
             walls=walls,
             segments_analyzed=len(raw_segments),
             segments_ignored=ignored,
+            duplicates_removed=duplicates_removed,
+            average_confidence=average_confidence,
             warnings=warnings,
-            confidence=confidence,
+            confidence=self._global_confidence(
+                wall_count=len(walls),
+                segment_count=len(merged_segments),
+                average_confidence=average_confidence,
+                has_scale=scale_factor != 1.0,
+            ),
         )
 
     def _extract_segments(
@@ -169,6 +236,9 @@ class WallDetector:
         segments: list[WallSegment] = []
 
         for entity in document.entities:
+            if self._is_annotation_layer(getattr(entity, "layer", "")):
+                continue
+
             if isinstance(entity, DXFLine):
                 segments.append(
                     WallSegment(
@@ -213,6 +283,12 @@ class WallDetector:
             for start, end in pairs
         ]
 
+    def _ignore_segment(self, segment: WallSegment) -> bool:
+        return (
+            segment.length < self.settings.min_segment_length
+            or self._is_annotation_layer(segment.layer)
+        )
+
     def _merge_collinear_segments(
         self,
         segments: list[WallSegment],
@@ -233,12 +309,18 @@ class WallDetector:
                 changed = False
 
                 for candidate in list(remaining):
-                    if self._angle_difference(base, candidate) > self.angle_tolerance:
+                    if (
+                        self._angle_difference(base, candidate)
+                        > self.settings.angle_tolerance_degrees
+                    ):
                         continue
 
                     offset = self._dot(candidate.start, normal)
 
-                    if abs(offset - base_offset) > self.merge_offset_tolerance:
+                    if (
+                        abs(offset - base_offset)
+                        > self.settings.merge_offset_tolerance
+                    ):
                         continue
 
                     candidate_span = self._span(candidate, direction)
@@ -271,29 +353,30 @@ class WallDetector:
     def _walls_from_parallel_pairs(
         self,
         segments: list[WallSegment],
+        has_scale: bool,
     ) -> list[Wall]:
         walls: list[Wall] = []
-        used_pairs: set[tuple[int, int]] = set()
 
         for index, first in enumerate(segments):
             for second_index in range(index + 1, len(segments)):
                 second = segments[second_index]
 
-                if self._angle_difference(first, second) > self.angle_tolerance:
+                if (
+                    self._angle_difference(first, second)
+                    > self.settings.angle_tolerance_degrees
+                ):
                     continue
 
-                wall_data = self._wall_from_pair(first, second)
+                wall = self._wall_from_pair(
+                    first,
+                    second,
+                    has_scale=has_scale,
+                )
 
-                if wall_data is None:
+                if wall is None:
                     continue
 
-                signature = self._wall_signature(wall_data)
-
-                if signature in used_pairs:
-                    continue
-
-                used_pairs.add(signature)
-                walls.append(wall_data)
+                walls.append(wall)
 
         return walls
 
@@ -301,6 +384,7 @@ class WallDetector:
         self,
         first: WallSegment,
         second: WallSegment,
+        has_scale: bool,
     ) -> Wall | None:
         direction = first.direction
         normal = (-direction[1], direction[0])
@@ -309,8 +393,8 @@ class WallDetector:
         )
 
         if (
-            distance < self.min_wall_thickness
-            or distance > self.max_wall_thickness
+            distance < self.settings.min_wall_thickness
+            or distance > self.settings.max_wall_thickness
         ):
             return None
 
@@ -318,8 +402,9 @@ class WallDetector:
         second_span = self._span(second, direction)
         overlap_start = max(first_span[0], second_span[0])
         overlap_end = min(first_span[1], second_span[1])
+        wall_length = overlap_end - overlap_start
 
-        if overlap_end - overlap_start < self.min_segment_length:
+        if wall_length < self.settings.min_wall_length:
             return None
 
         first_offset = self._dot(first.start, normal)
@@ -333,6 +418,14 @@ class WallDetector:
             self._scale(direction, overlap_end),
             self._scale(normal, center_offset),
         )
+        confidence = self._wall_confidence(
+            length=wall_length,
+            thickness=distance,
+            has_scale=has_scale,
+        )
+
+        if confidence < self.settings.min_wall_confidence:
+            return None
 
         return Wall(
             name="Mur detecte",
@@ -340,19 +433,119 @@ class WallDetector:
             end=end,
             thickness=distance or DEFAULT_WALL_THICKNESS,
             orientation=degrees(atan2(direction[1], direction[0])),
+            source="detected",
+            confidence=confidence,
+            detection_id=self._detection_id(start, end, distance),
+            metadata={
+                "detector": "WallDetector",
+                "source_segments": [first.source_type, second.source_type],
+                "layers": sorted({first.layer, second.layer}),
+            },
         )
 
-    def _wall_signature(self, wall: Wall) -> tuple[int, int]:
-        points = sorted([wall.start, wall.end])
-        return (
-            hash((
-                round(points[0][0], 1),
-                round(points[0][1], 1),
-                round(points[1][0], 1),
-                round(points[1][1], 1),
-            )),
-            round(wall.thickness),
+    def _remove_duplicate_walls(
+        self,
+        walls: list[Wall],
+    ) -> tuple[list[Wall], int]:
+        sorted_walls = sorted(
+            walls,
+            key=lambda wall: (
+                -getattr(wall, "confidence", 0.0),
+                -wall.length,
+            ),
         )
+        unique: list[Wall] = []
+        duplicates = 0
+
+        for wall in sorted_walls:
+            if any(self._is_duplicate_wall(wall, kept) for kept in unique):
+                duplicates += 1
+                continue
+
+            unique.append(wall)
+
+        unique.sort(
+            key=lambda wall: (
+                round(self._center(wall)[1], 3),
+                round(self._center(wall)[0], 3),
+            )
+        )
+
+        return unique, duplicates
+
+    def _is_duplicate_wall(self, first: Wall, second: Wall) -> bool:
+        length_tolerance = max(
+            self.settings.duplicate_length_tolerance,
+            max(first.length, second.length)
+            * self.settings.duplicate_length_ratio,
+        )
+
+        if abs(first.length - second.length) > length_tolerance:
+            return False
+
+        if (
+            self._wall_angle_difference(first, second)
+            > self.settings.duplicate_angle_tolerance
+        ):
+            return False
+
+        if (
+            self._distance(self._center(first), self._center(second))
+            > self.settings.duplicate_center_tolerance
+        ):
+            return False
+
+        direct = (
+            self._distance(first.start, second.start)
+            + self._distance(first.end, second.end)
+        ) / 2.0
+        reversed_order = (
+            self._distance(first.start, second.end)
+            + self._distance(first.end, second.start)
+        ) / 2.0
+
+        return (
+            min(direct, reversed_order)
+            <= self.settings.duplicate_endpoint_tolerance
+        )
+
+    def has_obvious_duplicates(self, walls: list[Wall]) -> bool:
+        """
+        Return True when a list of walls still contains an obvious duplicate.
+        """
+        for index, first in enumerate(walls):
+            for second in walls[index + 1:]:
+                if self._is_duplicate_wall(first, second):
+                    return True
+
+        return False
+
+    def _wall_confidence(
+        self,
+        length: float,
+        thickness: float,
+        has_scale: bool,
+    ) -> float:
+        confidence = 0.35
+
+        if length >= self.settings.min_wall_length * 2.0:
+            confidence += 0.20
+        elif length >= self.settings.min_wall_length:
+            confidence += 0.10
+
+        if (
+            self.settings.preferred_min_thickness
+            <= thickness
+            <= self.settings.preferred_max_thickness
+        ):
+            confidence += 0.25
+        else:
+            confidence += 0.10
+
+        if has_scale:
+            confidence += 0.10
+
+        return min(0.95, confidence)
 
     def _touches_any_span(
         self,
@@ -360,8 +553,8 @@ class WallDetector:
         spans: list[tuple[float, float]],
     ) -> bool:
         return any(
-            candidate[0] <= span[1] + self.merge_gap_tolerance
-            and candidate[1] >= span[0] - self.merge_gap_tolerance
+            candidate[0] <= span[1] + self.settings.merge_gap_tolerance
+            and candidate[1] >= span[0] - self.settings.merge_gap_tolerance
             for span in spans
         )
 
@@ -373,6 +566,14 @@ class WallDetector:
         diff = abs(degrees(first.angle - second.angle)) % 180.0
         return min(diff, 180.0 - diff)
 
+    def _is_annotation_layer(self, layer: str) -> bool:
+        normalized = str(layer).lower()
+
+        return any(
+            keyword in normalized
+            for keyword in self.settings.annotation_layer_keywords
+        )
+
     @staticmethod
     def _scale_factor(calibration) -> float:
         value = getattr(calibration, "scale_factor", None)
@@ -383,21 +584,29 @@ class WallDetector:
         return float(value)
 
     @staticmethod
-    def _confidence(
+    def _global_confidence(
         wall_count: int,
         segment_count: int,
+        average_confidence: float,
         has_scale: bool,
     ) -> float:
         if wall_count <= 0 or segment_count <= 0:
             return 0.0
 
         ratio = min(1.0, wall_count / max(1.0, segment_count / 4.0))
-        confidence = 0.35 + (ratio * 0.4)
+        confidence = (average_confidence * 0.75) + (ratio * 0.15)
 
         if has_scale:
-            confidence += 0.15
+            confidence += 0.10
 
-        return min(0.9, confidence)
+        return min(0.95, confidence)
+
+    @staticmethod
+    def _average_wall_confidence(walls: list[Wall]) -> float:
+        if not walls:
+            return 0.0
+
+        return sum(getattr(wall, "confidence", 0.0) for wall in walls) / len(walls)
 
     @staticmethod
     def _span(segment: WallSegment, direction: Point) -> tuple[float, float]:
@@ -406,6 +615,34 @@ class WallDetector:
             WallDetector._dot(segment.end, direction),
         )
         return (min(values), max(values))
+
+    @staticmethod
+    def _wall_angle_difference(first: Wall, second: Wall) -> float:
+        diff = abs(first.angle - second.angle) % 180.0
+        return min(diff, 180.0 - diff)
+
+    @staticmethod
+    def _center(wall: Wall) -> Point:
+        return (
+            (wall.start[0] + wall.end[0]) / 2.0,
+            (wall.start[1] + wall.end[1]) / 2.0,
+        )
+
+    @staticmethod
+    def _distance(first: Point, second: Point) -> float:
+        return hypot(first[0] - second[0], first[1] - second[1])
+
+    @staticmethod
+    def _detection_id(start: Point, end: Point, thickness: float) -> str:
+        points = sorted([start, end])
+        return (
+            "wall:"
+            f"{points[0][0]:.1f}:"
+            f"{points[0][1]:.1f}:"
+            f"{points[1][0]:.1f}:"
+            f"{points[1][1]:.1f}:"
+            f"{thickness:.1f}"
+        )
 
     @staticmethod
     def _dot(first: Point, second: Point) -> float:
@@ -418,3 +655,8 @@ class WallDetector:
     @staticmethod
     def _scale(point: Point, factor: float) -> Point:
         return (point[0] * factor, point[1] * factor)
+
+    def _replace_setting(self, name: str, value: float) -> WallDetectionSettings:
+        data = self.settings.__dict__.copy()
+        data[name] = value
+        return WallDetectionSettings(**data)

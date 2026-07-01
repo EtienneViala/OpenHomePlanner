@@ -72,6 +72,11 @@ class MainWindow(QMainWindow):
         self.action_import_dxf = QAction("Importer un DXF...", self)
         self.action_save = QAction("Sauvegarder", self)
         self.action_detect_walls = QAction("Detecter les murs", self)
+        self.action_clear_detected_walls = QAction(
+            "Effacer les murs detectes",
+            self,
+        )
+        self.action_redetect_walls = QAction("Redetecter les murs", self)
         self.action_exit = QAction("Quitter", self)
         self.action_about = QAction("A propos", self)
 
@@ -83,6 +88,10 @@ class MainWindow(QMainWindow):
         self.action_import_dxf.triggered.connect(self.import_dxf)
         self.action_open_svg.triggered.connect(self.import_svg)
         self.action_detect_walls.triggered.connect(self.detect_walls)
+        self.action_clear_detected_walls.triggered.connect(
+            self.clear_detected_walls
+        )
+        self.action_redetect_walls.triggered.connect(self.redetect_walls)
         self.action_exit.triggered.connect(self.close)
         self.action_about.triggered.connect(self.about)
 
@@ -101,6 +110,8 @@ class MainWindow(QMainWindow):
 
         analysis_menu = menu.addMenu("&Analyse")
         analysis_menu.addAction(self.action_detect_walls)
+        analysis_menu.addAction(self.action_clear_detected_walls)
+        analysis_menu.addAction(self.action_redetect_walls)
 
         help_menu = menu.addMenu("&Aide")
         help_menu.addAction(self.action_about)
@@ -221,6 +232,28 @@ class MainWindow(QMainWindow):
         """
         Run wall detection on the already loaded DXF and add walls to Project.
         """
+        self._run_wall_detection(clear_existing=False)
+
+    def clear_detected_walls(self):
+        """
+        Remove only automatically detected walls.
+        """
+        removed = self.project.remove_detected_walls()
+        message = f"{removed} murs detectes effaces"
+        self.statusBar().showMessage(message)
+        QMessageBox.information(
+            self,
+            "Detection des murs",
+            message,
+        )
+
+    def redetect_walls(self):
+        """
+        Replace previous detected walls with a fresh detection.
+        """
+        self._run_wall_detection(clear_existing=True)
+
+    def _run_wall_detection(self, clear_existing: bool):
         if self.project.dxf_document is None:
             QMessageBox.information(
                 self,
@@ -229,13 +262,18 @@ class MainWindow(QMainWindow):
             )
             return
 
+        removed = 0
+
+        if clear_existing:
+            removed = self.project.remove_detected_walls()
+
         report = BuildingAnalyzer().analyze(self.project.dxf_document)
         self.project.set_analysis_report(report)
 
         for wall in report.detected_walls:
             self.project.add_object(wall)
 
-        message = f"{report.wall_count} murs detectes"
+        message = self._analysis_summary_message(report, removed)
         self.statusBar().showMessage(message)
         QMessageBox.information(
             self,
@@ -243,12 +281,28 @@ class MainWindow(QMainWindow):
             message,
         )
 
+    def _analysis_summary_message(self, report, removed: int = 0) -> str:
+        lines = []
+
+        if removed:
+            lines.append(f"Anciens murs detectes effaces : {removed}")
+
+        lines.extend([
+            f"Segments analyses : {report.segments_analyzed}",
+            f"Segments ignores : {report.segments_ignored}",
+            f"Murs detectes : {report.wall_count}",
+            f"Doublons supprimes : {report.duplicates_removed}",
+            f"Confiance moyenne : {report.average_wall_confidence:.2f}",
+        ])
+
+        return "\n".join(lines)
+
     def about(self):
 
         QMessageBox.information(
             self,
             "OpenHomePlanner",
-            "OpenHomePlanner\n\nVersion 0.7.3",
+            "OpenHomePlanner\n\nVersion 0.7.4",
         )
 
     def activate_tool(self, tool_name: str):
