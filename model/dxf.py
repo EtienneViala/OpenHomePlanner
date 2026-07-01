@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 class DXFEntity:
     layer: str = "0"
     color: int = 7
+    color_rgb: tuple[int, int, int] | None = None
 
 
 # ==========================================================
@@ -32,7 +33,9 @@ class DXFLayer:
 
     name: str
     visible: bool = True
+    locked: bool = False
     color: int = 7
+    color_rgb: tuple[int, int, int] | None = None
 
 
 # ==========================================================
@@ -87,11 +90,15 @@ class DXFDocument:
 
     layers: dict[str, DXFLayer] = field(default_factory=dict)
 
+    warnings: list[str] = field(default_factory=list)
+
     def ensure_layer(
         self,
         name: str,
         color: int = 7,
+        color_rgb: tuple[int, int, int] | None = None,
         visible: bool = True,
+        locked: bool = False,
     ) -> DXFLayer:
         """
         Return an existing layer or create it.
@@ -109,8 +116,18 @@ class DXFDocument:
             self.layers[name] = DXFLayer(
                 name=name,
                 visible=visible,
+                locked=locked,
                 color=color,
+                color_rgb=color_rgb,
             )
+        else:
+            layer = self.layers[name]
+            if color is not None and layer.color == 7:
+                layer.color = color
+            if color_rgb is not None and layer.color_rgb is None:
+                layer.color_rgb = color_rgb
+            layer.visible = layer.visible and visible
+            layer.locked = layer.locked or locked
 
         return self.layers[name]
 

@@ -2,7 +2,12 @@
 Selection tool.
 """
 
+import logging
+
 from tools.tool import Tool
+
+
+logger = logging.getLogger(__name__)
 
 
 class SelectTool(Tool):
@@ -11,11 +16,11 @@ class SelectTool(Tool):
 
     def activate(self):
 
-        print("[Tool] Selection activated")
+        logger.debug("Selection tool activated")
 
     def deactivate(self):
 
-        print("[Tool] Selection deactivated")
+        logger.debug("Selection tool deactivated")
 
     def mouse_press(self, event):
 

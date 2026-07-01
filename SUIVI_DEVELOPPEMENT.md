@@ -1,12 +1,12 @@
 # OpenHomePlanner - Suivi du developpement
 
-Derniere mise a jour : 2026-06-30
+Derniere mise a jour : 2026-07-01
 
 ---
 
 # Etat global
 
-Version de travail : V0.6 en cours
+Version de travail : V0.6 finalisee
 
 OpenHomePlanner est actuellement capable d'importer un plan DXF, de l'afficher comme fond de plan, de placer des objets electriques simples et de gerer leur selection.
 
@@ -67,17 +67,22 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Liste des calques avec cases a cocher
 - Masquage et affichage d'un calque sans recharger le DXF
 - Rendu DXF decoupe par calque dans `DXFItem`
+- Import DXF depuis `Fichier > Importer un DXF...`
+- Ajustement automatique de la vue avec `fitInView()`
+- Couleurs de calques recuperees et utilisees au rendu
+- Etat de verrouillage des calques conserve dans le modele
+- Gestion propre des DXF invalides, vides, blocs manquants et entites non supportees
 
 ---
 
 # En cours
 
-## Stabilisation V0.6
+## Stabilisation V0.6 terminee
 
-- Tester l'import reel avec `rochette.dxf` dans un environnement ou `ezdxf` est installe
-- Verifier le comportement du panneau `Layers` sur un fichier DXF contenant beaucoup de calques
-- Verifier la coherence entre les calques lus dans la table DXF et les calques references par les entites
-- Decider si les calques doivent etre groupes ou filtres par type dans l'interface
+- Import reel teste avec `rochette.dxf` : 191 entites importees
+- Calques detectes sur le fichier de test : `0`, `Defpoints`, `Layer 1`
+- Panneau `Layers` synchronise automatiquement apres import
+- Masquage/affichage des calques sans rechargement du DXF
 
 ---
 
@@ -94,10 +99,7 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 
 # Dette technique identifiee
 
-- `ui/main_window.py` contient des imports dupliques ou ambigus, notamment autour de `Project`
-- `Canvas.add_outlet()` cree encore directement un `OutletItem`, ce qui contourne l'architecture cible
 - Certains textes dans les fichiers affichent des problemes d'encodage
-- Les fichiers `__pycache__` ne devraient pas etre suivis par Git
 - `requirements.txt` doit rester synchronise avec les imports reels du projet
 
 ---
@@ -106,11 +108,8 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 
 ## Court terme
 
-- Nettoyer les imports de `ui/main_window.py`
-- Supprimer ou refactorer `Canvas.add_outlet()`
-- Ajouter un `.gitignore`
-- Installer les dependances puis tester l'import DXF complet
-- Verifier visuellement le panneau `Layers`
+- Verifier visuellement le panneau `Layers` sur plusieurs fichiers DXF reels
+- Corriger progressivement les anciens textes encodes incorrectement
 
 ## V0.7 - Reconnaissance du plan
 
@@ -162,3 +161,19 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Connexion du panneau `Layers` au `Canvas`
 - Ajout de `ezdxf` dans `requirements.txt`
 - Creation de ce fichier de suivi
+
+## 2026-07-01
+
+- Finalisation de la V0.6
+- Ajout de l'action `Fichier > Importer un DXF...`
+- Suppression de l'import automatique de `rochette.dxf` au demarrage
+- Nettoyage des imports dupliques de `ui/main_window.py`
+- Suppression de `Canvas.add_outlet()` pour respecter `GraphicsFactory`
+- Ajout des couleurs RGB et de l'etat verrouille aux calques DXF
+- Affichage des couleurs et du verrouillage dans le panneau `Layers`
+- Rendu DXF avec les couleurs de calques
+- Ajout d'erreurs utilisateur pour DXF invalide ou vide
+- Journalisation des blocs manquants et entites non supportees
+- Remplacement des `print()` par du logging
+- Ajout d'un `.gitignore`
+- Suppression des caches Python suivis ou generes localement

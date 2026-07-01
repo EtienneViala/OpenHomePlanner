@@ -5,8 +5,7 @@ Canvas principal.
 """
 
 from pathlib import Path
-from graphics.outlet_item import OutletItem
-from model.electrical import Outlet
+
 from graphics.factory import GraphicsFactory
 from tools.tool_manager import ToolManager
 from tools.select_tool import SelectTool
@@ -195,20 +194,6 @@ class Canvas(QGraphicsView):
 
             y += self.GRID_SIZE
     
-    def add_outlet(self, x, y):
-
-        outlet = Outlet(
-            x=x,
-            y=y,
-            name="Prise"
-        )
-
-        item = OutletItem(outlet)
-
-        self.scene.addItem(item)
-
-        return item
-    
     def on_object_added(self, obj):
 
         item = GraphicsFactory.create(obj)
@@ -227,12 +212,13 @@ class Canvas(QGraphicsView):
 
         item = items[0]
 
-        self.project.selection.set(
-            item.object
-        )
+        selected_object = getattr(item, "object", None)
 
-        from PySide6.QtCore import QPointF
+        if selected_object is None:
+            self.project.selection.clear()
+            return
 
+        self.project.selection.set(selected_object)
 
     # ---------------------------------------------------------
     # Utilities
@@ -296,10 +282,11 @@ class Canvas(QGraphicsView):
             self._dxf_item
         )
 
-        self.fitInView(
-            self._dxf_item,
-            Qt.KeepAspectRatio
-        )
+        if not self._dxf_item.boundingRect().isNull():
+            self.fitInView(
+                self._dxf_item,
+                Qt.KeepAspectRatio,
+            )
 
         self.dxfLoaded.emit(document)
 

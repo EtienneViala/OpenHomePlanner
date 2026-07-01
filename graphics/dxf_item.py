@@ -158,19 +158,24 @@ class DXFItem(QGraphicsItem):
         widget
     ):
 
-        pen = QPen(
-            QColor(180,180,180)
-        )
-
-        pen.setCosmetic(True)
-
-        painter.setPen(pen)
-
         for layer_name, path in self.paths_by_layer.items():
 
             if not self.document.is_layer_visible(layer_name):
 
                 continue
+
+            layer = self.document.layers.get(layer_name)
+            color_rgb = None
+
+            if layer is not None:
+                color_rgb = layer.color_rgb
+
+            if color_rgb is None:
+                color_rgb = (180, 180, 180)
+
+            pen = QPen(QColor(*color_rgb))
+            pen.setCosmetic(True)
+            painter.setPen(pen)
 
             painter.drawPath(
                 path

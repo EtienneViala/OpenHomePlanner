@@ -5,6 +5,7 @@ DXF layers panel.
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QDockWidget,
     QTreeWidget,
@@ -35,7 +36,10 @@ class LayersPanel(QDockWidget):
         self.tree = QTreeWidget()
 
         self.tree.setHeaderLabels([
+            "Visible",
             "Layer",
+            "Color",
+            "Locked",
             "Entities",
         ])
 
@@ -76,12 +80,15 @@ class LayersPanel(QDockWidget):
             layer = document.layers[layer_name]
 
             item = QTreeWidgetItem([
+                "",
                 layer.name,
+                self._format_color(layer.color),
+                "Yes" if layer.locked else "No",
                 str(entity_counts.get(layer.name, 0)),
             ])
 
             item.setData(
-                0,
+                1,
                 Qt.UserRole,
                 layer.name,
             )
@@ -97,9 +104,16 @@ class LayersPanel(QDockWidget):
                 Qt.Checked if layer.visible else Qt.Unchecked,
             )
 
+            if layer.color_rgb is not None:
+                item.setBackground(
+                    2,
+                    QColor(*layer.color_rgb),
+                )
+
             self.tree.addTopLevelItem(item)
 
-        self.tree.resizeColumnToContents(0)
+        for column in range(self.tree.columnCount()):
+            self.tree.resizeColumnToContents(column)
 
         self._updating = False
 
@@ -137,7 +151,7 @@ class LayersPanel(QDockWidget):
             return
 
         layer_name = item.data(
-            0,
+            1,
             Qt.UserRole,
         )
 
@@ -154,3 +168,11 @@ class LayersPanel(QDockWidget):
             layer_name,
             visible,
         )
+
+    # ---------------------------------------------------------
+
+    def _format_color(
+        self,
+        color: int,
+    ) -> str:
+        return f"ACI {color}"

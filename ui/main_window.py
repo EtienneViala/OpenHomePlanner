@@ -5,11 +5,11 @@ Main application window.
 """
 
 from pathlib import Path
-from model.project import Project
+import logging
+
 from core.project import Project
-from model.electrical import Outlet
+from importer.dxf_importer import DXFImporter, DXFImportError
 from ui.property_panel import PropertyPanel
-from tools.outlet_tool import OutletTool
 from ui.library_panel import LibraryPanel
 from ui.layers_panel import LayersPanel
 from tools.select_tool import SelectTool
@@ -19,15 +19,15 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QFileDialog,
-    QDockWidget,
-    QListWidget,
     QMainWindow,
     QMessageBox,
-    QTextEdit,
     QToolBar,
 )
 
 from ui.canvas import Canvas
+
+
+logger = logging.getLogger(__name__)
 
 
 class MainWindow(QMainWindow):
@@ -36,7 +36,6 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.project = Project()
-        self.canvas = Canvas(self.project)
 
         self.setWindowTitle("OpenHomePlanner")
         self.resize(1600, 900)
@@ -61,32 +60,8 @@ class MainWindow(QMainWindow):
 
         self.statusBar().showMessage("Ready")
 
-        self.project.objects.add(
-            Outlet(
-                x=0,
-                y=0,
-                name="Prise salon"
-            )
-        )
-
-        self.project.objects.add(
-            Outlet(
-                x=120,
-                y=0,
-                name="Prise TV"
-            )
-        )
-
-        self.project.objects.add(
-            Outlet(
-                x=0,
-                y=120,
-                name="Prise bureau"
-            )
-        )
-
         self.canvas.tool_manager.set_tool(
-            OutletTool(self.canvas)
+            SelectTool(self.canvas)
         )
 
     # ==============================================================
@@ -109,6 +84,8 @@ class MainWindow(QMainWindow):
 
         self.action_open_svg = QAction("Importer SVG", self)
 
+        self.action_import_dxf = QAction("Importer un DXF...", self)
+
         self.action_save = QAction("Sauvegarder", self)
 
         self.action_exit = QAction("Quitter", self)
@@ -117,11 +94,13 @@ class MainWindow(QMainWindow):
 
         self.action_new.setShortcut("Ctrl+N")
 
-        self.action_open_svg.setShortcut("Ctrl+O")
+        self.action_import_dxf.setShortcut("Ctrl+O")
 
         self.action_save.setShortcut("Ctrl+S")
 
         self.action_exit.setShortcut("Ctrl+Q")
+
+        self.action_import_dxf.triggered.connect(self.import_dxf)
 
         self.action_open_svg.triggered.connect(self.import_svg)
 
@@ -142,6 +121,8 @@ class MainWindow(QMainWindow):
         file_menu.addAction(self.action_new)
 
         file_menu.addSeparator()
+
+        file_menu.addAction(self.action_import_dxf)
 
         file_menu.addAction(self.action_open_svg)
 
@@ -168,6 +149,8 @@ class MainWindow(QMainWindow):
         self.addToolBar(toolbar)
 
         toolbar.addAction(self.action_new)
+
+        toolbar.addAction(self.action_import_dxf)
 
         toolbar.addAction(self.action_open_svg)
 
@@ -235,6 +218,53 @@ class MainWindow(QMainWindow):
         )
 
     # ==============================================================
+    # DXF
+    # ==============================================================
+
+    def import_dxf(self):
+
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            "Importer un DXF",
+            "",
+            "DXF (*.dxf)"
+        )
+
+        if not filename:
+            return
+
+        self._load_dxf_file(Path(filename))
+
+    # --------------------------------------------------------------
+
+    def _load_dxf_file(self, filename: Path):
+
+        try:
+            document = DXFImporter().load(str(filename))
+        except DXFImportError as exc:
+            logger.exception("DXF import failed")
+            QMessageBox.warning(
+                self,
+                "Import DXF",
+                str(exc),
+            )
+            return
+
+        self.current_file = filename
+        self.canvas.load_dxf(document)
+
+        self.statusBar().showMessage(
+            f"DXF importé : {filename}"
+        )
+
+        if document.warnings:
+            QMessageBox.warning(
+                self,
+                "Import DXF",
+                "\n".join(document.warnings[:10]),
+            )
+
+    # ==============================================================
     # SVG
     # ==============================================================
 
@@ -265,7 +295,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(
             self,
             "OpenHomePlanner",
-            "OpenHomePlanner\n\nVersion 0.2"
+            "OpenHomePlanner\n\nVersion 0.6"
         )
 
     def on_tool_selected(self, tool_name):

@@ -1,6 +1,6 @@
 # OpenHomePlanner - Architecture
 
-Version : V0.5.1
+Version : V0.6
 
 ---
 
@@ -375,6 +375,19 @@ Grille
 ```
 
 Le plan DXF reste verrouillé.
+
+Le modele DXF stocke les calques dans `DXFDocument` sous forme de donnees
+pures :
+
+- nom
+- visibilite
+- verrouillage
+- couleur ACI
+- couleur RGB resolue
+
+Le panneau `Layers` lit ce modele et emet uniquement des changements de
+visibilite. Le `Canvas` applique ce changement au document courant et demande
+au `DXFItem` de se repeindre, sans recharger le fichier DXF.
 
 ---
 
