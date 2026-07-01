@@ -1,3 +1,8 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
+/analysis/detectors/__init__.py
+/analysis/__init__.py
+/ui/__pycache__/canvas.cpython-313.pyc
+/ui/__pycache__/canvas.cpython-313.pyc

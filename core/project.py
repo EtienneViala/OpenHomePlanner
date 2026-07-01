@@ -21,6 +21,7 @@ class Project:
 
         self.name = "Untitled"
         self.dxf_document = None
+        self.analysis_report = None
         self.house = House(name="Maison")
 
         self.objects = ObjectManager()
@@ -57,6 +58,14 @@ class Project:
 
     # ---------------------------------------------------------
 
+    def set_analysis_report(self, report) -> None:
+        """
+        Store the latest building analysis report.
+        """
+        self.analysis_report = report
+
+    # ---------------------------------------------------------
+
     def _default_floor(self) -> Floor:
         """
         Return the default floor used by manual architectural tools.
@@ -82,4 +91,9 @@ class Project:
             "house": self.house.to_dict(),
             "object_count": len(self.objects),
             "has_dxf_document": self.dxf_document is not None,
+            "analysis_report": (
+                self.analysis_report.to_dict()
+                if self.analysis_report is not None
+                else None
+            ),
         }

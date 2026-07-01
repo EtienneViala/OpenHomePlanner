@@ -1,6 +1,6 @@
 # OpenHomePlanner - Architecture
 
-Version : V0.7.1
+Version : V0.7.2
 
 ---
 
@@ -101,6 +101,16 @@ core/
     project.py
     object_manager.py
     selection_manager.py
+
+analysis/
+    analyzer.py
+    calibration.py
+    detectors/
+        unit_detector.py
+        dimension_detector.py
+        wall_detector.py
+        opening_detector.py
+        room_detector.py
 
 graphics/
     base_item.py
@@ -212,12 +222,61 @@ Il contient tous les objets.
 Project
 
 |-- DXFDocument
+|-- AnalysisReport
 |-- House
 |-- ObjectManager
 |-- SelectionManager
 ```
 
 Toutes les modifications passent obligatoirement par le Project.
+
+Le dernier rapport d'analyse du batiment peut etre stocke dans le `Project`
+via `set_analysis_report(...)`. Ce stockage ne modifie pas les flux existants
+d'import, de dessin, de selection ou de suppression.
+
+---
+
+# Analyse du batiment
+
+La V0.7.2 ajoute un package `analysis/` independant de Qt. Il prepare la
+transformation progressive d'un DXF en modele architectural, sans reconnaitre
+encore automatiquement les murs, ouvertures ou pieces.
+
+Pipeline :
+
+```
+DXF
+|
+v
+UnitDetector
+|
+v
+DimensionDetector + CalibrationEngine
+|
+v
+WallDetector placeholder
+|
+v
+OpeningDetector placeholder
+|
+v
+RoomDetector placeholder
+|
+v
+AnalysisReport
+```
+
+Responsabilites :
+
+- `BuildingAnalyzer` orchestre les detecteurs et produit un rapport
+- `UnitDetector` lit `$INSUNITS` et normalise `mm`, `cm`, `m` et `in`
+- `DimensionDetector` recherche les entites `TEXT`, `MTEXT` et `DIMENSION`, et
+  dispose d'un fallback pour les cotes vectorisees en `LWPOLYLINE`
+- `CalibrationEngine` calcule un facteur d'echelle a partir des cotations,
+  en centimetres par unite DXF par defaut
+- `AnalysisReport` expose une serialisation `to_dict()` / `from_dict()`
+- `WallDetector`, `OpeningDetector` et `RoomDetector` sont des squelettes
+  documentes, remplacables independamment dans les versions futures
 
 ---
 
@@ -494,6 +553,10 @@ pures :
 Le panneau `Layers` lit ce modele et emet uniquement des changements de
 visibilite. Le `Canvas` applique ce changement au document courant et demande
 au `DXFItem` de se repeindre, sans recharger le fichier DXF.
+
+Quand une analyse fournit un `scale_factor`, le `Canvas` le transmet au
+`DXFItem`. Le fond DXF est alors dessine dans l'unite projet, en centimetres,
+sans modifier les donnees importees.
 
 ---
 

@@ -21,11 +21,16 @@ from model.dxf import (
 
 class DXFItem(QGraphicsItem):
 
-    def __init__(self, document: DXFDocument):
+    def __init__(
+        self,
+        document: DXFDocument,
+        scale_factor: float = 1.0,
+    ):
 
         super().__init__()
 
         self.document = document
+        self.scale_factor = scale_factor
 
         self.paths_by_layer = {}
 
@@ -50,13 +55,13 @@ class DXFItem(QGraphicsItem):
             if isinstance(entity, DXFLine):
 
                 path.moveTo(
-                    entity.x1,
-                    -entity.y1
+                    self._sx(entity.x1),
+                    self._sy(entity.y1)
                 )
 
                 path.lineTo(
-                    entity.x2,
-                    -entity.y2
+                    self._sx(entity.x2),
+                    self._sy(entity.y2)
                 )
 
             #
@@ -71,15 +76,15 @@ class DXFItem(QGraphicsItem):
                 x, y = entity.points[0]
 
                 path.moveTo(
-                    x,
-                    -y
+                    self._sx(x),
+                    self._sy(y)
                 )
 
                 for x, y in entity.points[1:]:
 
                     path.lineTo(
-                        x,
-                        -y
+                        self._sx(x),
+                        self._sy(y)
                     )
 
                 if entity.closed:
@@ -95,10 +100,10 @@ class DXFItem(QGraphicsItem):
                 r = entity.radius
 
                 path.addEllipse(
-                    entity.x-r,
-                    -entity.y-r,
-                    r*2,
-                    r*2
+                    self._sx(entity.x - r),
+                    self._sy(entity.y + r),
+                    self._scaled(r * 2),
+                    self._scaled(r * 2)
                 )
 
         self._update_bounding_rect()
@@ -112,6 +117,17 @@ class DXFItem(QGraphicsItem):
             self.paths_by_layer[layer_name] = QPainterPath()
 
         return self.paths_by_layer[layer_name]
+
+    # ---------------------------------------------------------
+
+    def _scaled(self, value):
+        return value * self.scale_factor
+
+    def _sx(self, value):
+        return self._scaled(value)
+
+    def _sy(self, value):
+        return -self._scaled(value)
 
     # ---------------------------------------------------------
 

@@ -5,13 +5,13 @@ d'une habitation a partir d'un plan existant, notamment au format DXF.
 
 ## Version de travail
 
-V0.7.1 finalisee : import DXF, affichage du plan comme fond de travail,
+V0.7.2 finalisee : import DXF, affichage du plan comme fond de travail,
 gestion des calques, barre d'outils, barre d'etat, snap activable,
 ghost preview generique et modele architectural pur Python pour representer
 une habitation. La V0.7.1 ajoute le premier outil architectural manuel :
-`WallTool`, avec creation de murs en deux clics, preview de longueur,
-orientation et epaisseur, selection, deplacement, suppression et affichage des
-proprietes.
+`WallTool`. La V0.7.2 ajoute l'infrastructure d'analyse DXF du batiment :
+detecteur d'unites, detecteur de cotations, moteur de calibration, rapport
+serialisable et detecteurs squelettes pour les futures analyses.
 
 ## Lancer l'application
 
@@ -40,6 +40,16 @@ Un script dedie valide le dessin manuel des murs, le `WallItem`, l'ajout au
 py scripts/check_v071.py
 ```
 
+## Verifier la V0.7.2
+
+Un script dedie valide l'infrastructure d'analyse : compilation, import DXF,
+lecture des unites, detection des cotations, creation du rapport et
+serialisation.
+
+```bash
+py scripts/check_v072.py rochette.dxf
+```
+
 ## Importer un plan DXF
 
 Depuis l'application :
@@ -50,7 +60,8 @@ Depuis l'application :
 
 Le plan est charge, centre et zoome automatiquement. Le panneau `Layers` est
 mis a jour avec les calques du DXF, leur couleur, leur etat de visibilite et
-leur verrouillage.
+leur verrouillage. Si une cote exploitable est detectee, le fond DXF est mis a
+l'echelle du projet en centimetres avant affichage.
 
 ## Confort d'utilisation
 
@@ -79,3 +90,10 @@ La V0.7.1 reutilise ce modele `Wall` pour le dessin manuel. `WallTool` cree un
 mur en deux clics, `GraphicsFactory` cree automatiquement le `WallItem`, et la
 preview V0.6.2 affiche le futur mur avant creation. La version ne contient pas
 de reconnaissance automatique, d'analyse DXF ou d'outils portes/fenetres.
+
+La V0.7.2 ajoute le package `analysis/`. `BuildingAnalyzer` execute le pipeline
+unites -> calibration -> detecteurs placeholder -> rapport. Le detecteur de
+cotations lit aussi les cotes vectorisees en polylignes, comme la cote `410`
+de `rochette.dxf`, et le `Canvas` applique le facteur calcule au `DXFItem`.
+Cette version ne reconnait pas encore automatiquement les murs, ouvertures ou
+pieces.

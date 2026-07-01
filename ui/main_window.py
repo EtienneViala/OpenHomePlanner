@@ -9,6 +9,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 
+from analysis.analyzer import BuildingAnalyzer
 from core.project import Project
 from importer.dxf_importer import DXFImporter, DXFImportError
 from tools.outlet_tool import OutletTool
@@ -169,8 +170,24 @@ class MainWindow(QMainWindow):
 
         self.current_file = filename
         self.project.set_dxf_document(document)
-        self.canvas.load_dxf(document)
-        self.statusBar().showMessage(f"DXF importe : {filename}")
+
+        report = BuildingAnalyzer().analyze(filename)
+        self.project.set_analysis_report(report)
+
+        scale_factor = (
+            report.scale_factor
+            if report.scale_factor is not None
+            else 1.0
+        )
+
+        self.canvas.load_dxf(
+            document,
+            scale_factor=scale_factor,
+        )
+        self.statusBar().showMessage(
+            f"DXF importe : {filename} - echelle {scale_factor:.4f} "
+            f"{report.real_unit}/DXF"
+        )
 
         if document.warnings:
             QMessageBox.warning(
@@ -200,7 +217,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(
             self,
             "OpenHomePlanner",
-            "OpenHomePlanner\n\nVersion 0.7.1",
+            "OpenHomePlanner\n\nVersion 0.7.2",
         )
 
     def activate_tool(self, tool_name: str):

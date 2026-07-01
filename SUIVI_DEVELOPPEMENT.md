@@ -6,9 +6,9 @@ Derniere mise a jour : 2026-07-01
 
 # Etat global
 
-Version de travail : V0.7.1 finalisee
+Version de travail : V0.7.2 finalisee
 
-OpenHomePlanner est actuellement capable d'importer un plan DXF, de l'afficher comme fond de plan, de placer des objets electriques simples, de dessiner manuellement des murs, de gerer leur selection, de proposer une experience utilisateur stabilisee, d'afficher une preview temporaire pour les outils de placement et de stocker un modele architectural pur Python dans le Project.
+OpenHomePlanner est actuellement capable d'importer un plan DXF, de l'afficher comme fond de plan, de placer des objets electriques simples, de dessiner manuellement des murs, de gerer leur selection, de proposer une experience utilisateur stabilisee, d'afficher une preview temporaire pour les outils de placement, de stocker un modele architectural pur Python dans le Project et de produire un premier rapport d'analyse DXF du batiment.
 
 Le travail recent porte sur la structuration du DXF et la gestion des calques, afin de preparer les fonctions de filtrage, de reconnaissance et d'annotation.
 
@@ -132,11 +132,26 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Ajout de `tests/test_wall_tool.py`
 - Ajout de `scripts/check_v071.py`
 
+## V0.7.2 - Infrastructure d'analyse du batiment
+
+- Ajout du package `analysis/`
+- Ajout de `BuildingAnalyzer` pour orchestrer le pipeline d'analyse
+- Ajout de `AnalysisReport`, rapport serialisable
+- Ajout de `UnitDetector` pour lire et normaliser les unites DXF
+- Ajout de `DimensionDetector` pour rechercher `TEXT`, `MTEXT` et `DIMENSION`
+- Ajout d'un fallback pour les cotations vectorisees en `LWPOLYLINE`
+- Ajout de `CalibrationEngine` pour calculer un facteur d'echelle
+- Ajout de squelettes documentes `WallDetector`, `OpeningDetector` et `RoomDetector`
+- Ajout d'un emplacement `Project.analysis_report`
+- Ajout de `tests/test_analysis.py`
+- Ajout de `scripts/check_v072.py`
+- Aucune reconnaissance automatique de murs, ouvertures ou pieces
+
 ---
 
 # En cours
 
-## Stabilisation V0.7.1 terminee
+## Stabilisation V0.7.2 terminee
 
 - Import reel teste avec `rochette.dxf` : 191 entites importees
 - Calques detectes sur le fichier de test : `0`, `Defpoints`, `Layer 1`
@@ -149,6 +164,10 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Modele architectural valide par tests unitaires sans Qt
 - WallTool valide par tests Qt offscreen
 - Check automatique V0.7.1 disponible : `py scripts/check_v071.py`
+- Infrastructure d'analyse validee par tests unitaires sans Qt
+- Check automatique V0.7.2 disponible : `py scripts/check_v072.py rochette.dxf`
+- Detection de la cote vectorisee `410` dans `rochette.dxf`
+- Application du facteur d'echelle d'analyse au rendu `DXFItem`
 
 ---
 
@@ -178,13 +197,6 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 
 - Verifier visuellement le panneau `Layers` sur plusieurs fichiers DXF reels
 - Corriger progressivement les anciens textes encodes incorrectement
-
-## V0.7.2 - Analyse du batiment
-
-- Analyse automatique du batiment
-- Reconnaissance future des murs
-- Reconnaissance future des portes
-- Reconnaissance future des fenetres
 
 ## V0.8 - Equipements electriques
 
@@ -294,3 +306,16 @@ Le travail recent porte sur la structuration du DXF et la gestion des calques, a
 - Extension de `ui/property_panel.py` pour les proprietes lecture seule du mur
 - Extension de `core/project.py` pour lier les murs au `House`
 - Ajout de tests unitaires et du script `scripts/check_v071.py`
+
+## 2026-07-01 - V0.7.2
+
+- Ajout de `analysis/analyzer.py`
+- Ajout de `analysis/calibration.py`
+- Ajout de `analysis/detectors/unit_detector.py`
+- Ajout de `analysis/detectors/dimension_detector.py`
+- Ajout des squelettes `wall_detector.py`, `opening_detector.py` et `room_detector.py`
+- Ajout du stockage du dernier rapport d'analyse dans `core/project.py`
+- Application du facteur `AnalysisReport.scale_factor` lors de l'affichage DXF
+- Ajout de `tests/test_analysis.py`
+- Ajout de `scripts/check_v072.py`
+- Mise a jour du README et de l'architecture

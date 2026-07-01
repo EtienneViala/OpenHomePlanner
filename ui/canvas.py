@@ -460,7 +460,11 @@ class Canvas(QGraphicsView):
         self._zoom = self.transform().m11()
         self.zoomChanged.emit(self._zoom)
     
-    def load_dxf(self, document):
+    def load_dxf(
+        self,
+        document,
+        scale_factor: float = 1.0,
+    ):
 
         if hasattr(self, "_dxf_item"):
 
@@ -470,7 +474,10 @@ class Canvas(QGraphicsView):
 
         self.dxf_document = document
 
-        self._dxf_item = DXFItem(document)
+        self._dxf_item = DXFItem(
+            document,
+            scale_factor=scale_factor,
+        )
 
         #
         # Le DXF reste derrière
